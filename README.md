@@ -1,6 +1,6 @@
 # Test Suite
 
-A powerful, embeddable TypeScript test suite with state management, real-time monitoring, and comprehensive error tracking.
+A lightweight, state-aware TypeScript test runner that tracks file changes and only runs tests on modified files.
 
 ## Features
 
