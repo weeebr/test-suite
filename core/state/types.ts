@@ -22,6 +22,7 @@ export interface TestGroup {
   parallel?: boolean;
   timeout?: number;
   maxParallel?: number;
+  files?: string[];
 }
 
 export interface TestState {

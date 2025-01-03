@@ -106,7 +106,7 @@ export interface Config {
 export const defaultConfig: Config = {
   // Project structure
   rootDir: process.cwd(),
-  targetDirs: ['tests', 'src/**/__tests__', '**/*.test.*', '**/*.spec.*'],
+  targetDirs: ['tests', 'src/**/__tests__', '**/*.test.*', '**/*.spec.*', 'validation/**/*.test.*'],
   exclude: ['node_modules', 'dist', 'coverage', 'build'],
   
   // Test patterns
@@ -115,7 +115,7 @@ export const defaultConfig: Config = {
     unit: /\.unit\.(test|spec)\.(ts|tsx|js|jsx)$/,
     integration: /\.integration\.(test|spec)\.(ts|tsx|js|jsx)$/,
     e2e: /\.e2e\.(test|spec)\.(ts|tsx|js|jsx)$/,
-    frontend: /\.frontend\.(test|spec)\.(ts|tsx|js|jsx)$/,
+    frontend: /\.(frontend|structure|codeQuality|centralization|projectStructure)\.(test|spec)\.(ts|tsx|js|jsx)$/,
     backend: /\.backend\.(test|spec)\.(ts|tsx|js|jsx)$/
   },
   testFileExtensions: ['.ts', '.tsx', '.js', '.jsx'],

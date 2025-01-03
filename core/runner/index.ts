@@ -14,6 +14,7 @@ export class TestRunner {
   private totalTests: number = 0;
   private consoleInterceptor: ConsoleInterceptor;
   private errorInterceptor: ErrorInterceptor;
+  private currentTest: number = 0;
 
   constructor(private config: Config) {
     this.consoleInterceptor = ConsoleInterceptor.getInstance();
@@ -56,11 +57,28 @@ export class TestRunner {
     return file.replace(/^\/+/, '');
   }
 
+  private formatTestDisplay(file: string): string {
+    const parts = file.split('/');
+    const fileName = parts.pop() || '';
+    const testType = fileName.split('.')[1] || ''; // Get test type (frontend, backend, etc)
+    
+    if (parts[0] === 'validation') {
+      // For validation tests: "validation {structure} tests"
+      return `validation {${parts[1]}} tests`;
+    } else if (parts[0] === 'tests') {
+      // For regular tests: "{testType} tests" or "{subdir} tests"
+      const subDir = parts[1] || testType;
+      return `{${subDir}} tests`;
+    }
+    return '{unknown} tests';
+  }
+
   async runTests(): Promise<TestResult[]> {
     try {
       const testFiles = await this.findTestFiles();
       this.totalTests = testFiles.length;
       this.completedTests = 0;
+      this.currentTest = 0;
 
       if (testFiles.length === 0) {
         const error = new Error('No test files found');
@@ -75,6 +93,8 @@ export class TestRunner {
         return [result];
       }
 
+      console.log(''); // Add empty line for spacing
+      
       // Create test groups based on directories
       const groups = this.createTestGroups(testFiles);
       groups.forEach(group => {
@@ -94,7 +114,7 @@ export class TestRunner {
 
       // Run tests for each group
       for (const group of groups) {
-        const groupFiles = testFiles.filter(file => file.includes(group.name));
+        const groupFiles = group.files || [];
         
         if (group.parallel && this.config.parallelization.enabled) {
           // Run tests in parallel with max workers limit
@@ -104,6 +124,8 @@ export class TestRunner {
             const workers = chunk.map(file => {
               try {
                 this.stateManager.startTest(group.name, file);
+                this.currentTest++;
+                process.stdout.write(`🧪 Running ${this.formatTestDisplay(file)}... [${this.currentTest}/${this.totalTests}]\n`);
                 return this.runTestInWorker(group.name, file);
               } catch (error) {
                 this.errorInterceptor.trackError('runtime', error as Error, {
@@ -120,6 +142,8 @@ export class TestRunner {
           // Run tests sequentially
           for (const file of groupFiles) {
             this.stateManager.startTest(group.name, file);
+            this.currentTest++;
+            process.stdout.write(`🧪 Running ${this.formatTestDisplay(file)}... [${this.currentTest}/${this.totalTests}]\n`);
             await this.runTestInWorker(group.name, file);
           }
         }
@@ -136,6 +160,8 @@ export class TestRunner {
         }
       }
 
+      console.log(''); // Add empty line for spacing
+      
       this.stateManager.finalize();
       const results = this.stateManager.getAllResults();
       console.log(formatTestSummary(results));
@@ -159,49 +185,86 @@ export class TestRunner {
   }
 
   private createTestGroups(files: string[]): TestGroup[] {
-    // Extract unique directories from test files
-    const dirs = new Set(files.map(file => {
+    // Map files to their most specific group
+    const fileGroups = new Map<string, string[]>();
+    
+    files.forEach(file => {
       const parts = file.split('/');
-      return parts[0]; // Get top-level directory
-    }));
+      parts.pop(); // Remove filename
+      const groupPath = parts.join('/');
+      
+      const existingGroup = fileGroups.get(groupPath) || [];
+      existingGroup.push(file);
+      fileGroups.set(groupPath, existingGroup);
+    });
 
-    // Create a group for each directory
-    return Array.from(dirs).map(dir => ({
+    // Sort groups by path depth and name
+    const sortedGroups = Array.from(fileGroups.entries()).sort(([a], [b]) => {
+      const aDepth = a.split('/').length;
+      const bDepth = b.split('/').length;
+      if (aDepth !== bDepth) return aDepth - bDepth;
+      return a.localeCompare(b);
+    });
+
+    // Create a group for each unique directory
+    return sortedGroups.map(([dir, groupFiles]) => ({
       name: dir,
       pattern: `${dir}/**/*.${this.config.testType}.test.ts`,
       parallel: true,
       maxParallel: this.config.parallelization.maxWorkers,
-      timeout: this.config.parallelization.groupTimeout
+      timeout: this.config.parallelization.groupTimeout,
+      files: groupFiles
     }));
   }
 
   private async findTestFiles(): Promise<string[]> {
     const files = await this.collectFiles();
+    console.log('All collected files:', files);
     
     // Filter based on test type
     if (this.config.testType === 'all') {
       return files;
     }
     
-    return files.filter(file => {
+    // For frontend tests, include both .frontend.test.ts and validation/structure/*.frontend.test.ts
+    if (this.config.testType === 'frontend') {
+      const frontendFiles = files.filter(file => 
+        file.includes('.frontend.test.ts') || 
+        (file.includes('validation/structure/') && file.endsWith('.test.ts'))
+      );
+      console.log('Frontend test files:', frontendFiles);
+      return frontendFiles;
+    }
+    
+    // For other test types
+    const filteredFiles = files.filter(file => {
       if (this.config.testType === 'self') {
         return file.includes('.self.test.ts');
       }
+      if (this.config.testType === 'backend') {
+        return file.includes('.backend.test.ts');
+      }
       return file.includes(`.${this.config.testType}.test.ts`);
     });
+    console.log(`${this.config.testType} test files:`, filteredFiles);
+    return filteredFiles;
   }
 
   async collectFiles(): Promise<string[]> {
-    const patterns = this.config.targetDirs.map(dir => 
-      join(this.config.rootDir, dir, '**', '*.test.ts')
-    );
+    const patterns = [
+      // Include tests from targetDirs and validation
+      ...this.config.targetDirs.map(dir => 
+        join(this.config.rootDir, dir, '**', '*.test.ts')
+      ),
+      join(this.config.rootDir, 'validation', '**', '*.test.ts')
+    ];
     
     const files = await glob(patterns, {
       ignore: this.config.exclude.map(pattern => `**/${pattern}/**`),
       nodir: true
     });
 
-    return files;
+    return files.map(file => file.replace(this.config.rootDir + '/', ''));
   }
 
   private async runTestInWorker(groupName: string, testFile: string): Promise<void> {
@@ -217,7 +280,6 @@ export class TestRunner {
         if (!hasResolved) {
           hasResolved = true;
           this.completedTests++;
-          process.stdout.write(`\r\r🧪 Running tests... [${this.completedTests}/${this.totalTests}]`);
           this.stateManager.completeTest(groupName, testFile, {
             ...result,
             file: this.formatFilePath(result.file),
