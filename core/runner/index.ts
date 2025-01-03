@@ -89,33 +89,29 @@ export class TestRunner {
   }
 
   private async findTestFiles(): Promise<string[]> {
-    const patterns = [
-      // Look in root tests directory for type-specific tests
-      join(this.config.rootDir, `tests/*.${this.config.testType}.test.ts`),
-      // Look in subdirectories for all test files if self test
-      ...(this.config.testType === 'self' ? [
-        join(this.config.rootDir, 'tests/**/*.test.ts')
-      ] : []),
-      // Look in subdirectories for type-specific tests
-      ...this.config.targetDirs.map(dir => 
-        join(this.config.rootDir, dir, `**/*.${this.config.testType}.test.ts`)
-      )
-    ];
+    const files = await this.collectFiles();
     
-    const files = await glob(patterns, {
-      ignore: ['**/node_modules/**', '**/dist/**']
+    // Filter based on test type
+    if (this.config.testType === 'all') {
+      return files;
+    }
+    
+    return files.filter(file => {
+      if (this.config.testType === 'self') {
+        return file.includes('.self.test.ts');
+      }
+      return file.includes(`.${this.config.testType}.test.ts`);
     });
-
-    return files;
   }
 
   async collectFiles(): Promise<string[]> {
     const patterns = this.config.targetDirs.map(dir => 
-      join(this.config.rootDir, dir, '**', `*${this.config.testPattern}`)
+      join(this.config.rootDir, dir, '**', '*.test.ts')
     );
     
     const files = await glob(patterns, {
-      ignore: this.config.exclude.map(pattern => `**/${pattern}/**`)
+      ignore: this.config.exclude.map(pattern => `**/${pattern}/**`),
+      nodir: true
     });
 
     return files;

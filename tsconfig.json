@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "es2020",
     "module": "commonjs",
-    "lib": ["ES2020", "DOM"],
+    "lib": ["es2020", "dom"],
     "declaration": true,
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "./",
     "strict": true,
+    "noImplicitAny": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "strictBindCallApply": true,
@@ -18,13 +19,13 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
-    "baseUrl": ".",
+    "baseUrl": "./",
     "paths": {
-      "@/*": ["./*"],
       "@core/*": ["core/*"],
       "@management/*": ["management/*"],
       "@monitoring/*": ["monitoring/*"],
-      "@frontend/*": ["frontend/*"]
+      "@validation/*": ["validation/*"],
+      "@tests/*": ["tests/*"]
     },
     "esModuleInterop": true,
     "experimentalDecorators": true,
@@ -33,12 +34,14 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx"
+    "core/**/*",
+    "management/**/*",
+    "monitoring/**/*",
+    "validation/**/*",
+    "tests/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "coverage"
+    "dist"
   ]
 } 

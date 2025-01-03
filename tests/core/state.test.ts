@@ -1,5 +1,5 @@
-import { TestResult } from '@/core/state';
-import { TestStateManager } from '@/core/state';
+import { TestResult } from '../../core/state';
+import { TestStateManager } from '../../core/state';
 
 export async function runTest(): Promise<TestResult> {
   try {

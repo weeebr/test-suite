@@ -1,54 +1,33 @@
-import { Worker } from 'worker_threads';
+export type WorkerStatus = 'starting' | 'running' | 'completed' | 'failed';
 
 export interface WorkerMetrics {
-  memoryUsage: number;
-  cpuUsage: number;
+  pid: number;
+  memory: number;
   startTime: number;
-  lastActivity: number;
-  file: string;
+  status: WorkerStatus;
 }
 
 export class WorkerMetricsManager {
-  private metrics = new Map<Worker, WorkerMetrics>();
+  private metrics = new Map<number, WorkerMetrics>();
 
-  public setMetrics(worker: Worker, metrics: WorkerMetrics): void {
-    this.metrics.set(worker, metrics);
+  updateMetrics(pid: number, metrics: WorkerMetrics): void {
+    this.metrics.set(pid, metrics);
   }
 
-  public updateMetrics(worker: Worker, update: Partial<WorkerMetrics>): void {
-    const current = this.metrics.get(worker);
-    if (current) {
-      this.metrics.set(worker, { ...current, ...update });
-    }
-  }
-
-  public getMetrics(worker: Worker): WorkerMetrics | undefined {
-    return this.metrics.get(worker);
-  }
-
-  public deleteMetrics(worker: Worker): void {
-    this.metrics.delete(worker);
-  }
-
-  public clear(): void {
+  clear(): void {
     this.metrics.clear();
   }
 
-  public getAggregateMetrics(): { totalMemory: number; averageMemory: number; peakMemory: number } {
-    let totalMemory = 0;
-    let peakMemory = 0;
-    let count = 0;
+  getAggregateMetrics(): { totalMemory: number; averageMemory: number; workerStatuses: Record<string, number> } {
+    const workers = Array.from(this.metrics.values());
+    const totalMemory = workers.reduce((sum, m) => sum + m.memory, 0);
+    const averageMemory = workers.length ? totalMemory / workers.length : 0;
 
-    for (const metrics of this.metrics.values()) {
-      totalMemory += metrics.memoryUsage;
-      peakMemory = Math.max(peakMemory, metrics.memoryUsage);
-      count++;
-    }
+    const workerStatuses = workers.reduce((acc, m) => {
+      acc[m.status] = (acc[m.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-    return {
-      totalMemory,
-      averageMemory: count > 0 ? totalMemory / count : 0,
-      peakMemory
-    };
+    return { totalMemory, averageMemory, workerStatuses };
   }
 } 

@@ -1,80 +1,42 @@
-import { join } from 'path';
-import { TestResult } from '../../core/state';
 import { promises as fs } from 'fs';
+import { join } from 'path';
+import { Dirent } from 'fs';
+import { TestResult } from '@core/state';
 
-export async function runTest(): Promise<TestResult> {
+export async function runFrontendTests(): Promise<TestResult[]> {
   try {
-    const testsDir = join(__dirname, '..');
+    const testDir = 'tests/frontend';
+    const entries = await fs.readdir(testDir, { withFileTypes: true });
+    
+    const testFiles = entries
+      .filter((entry: Dirent) => entry.isFile() && /\.test\.(ts|tsx|js|jsx)$/.test(entry.name))
+      .map((entry: Dirent) => join('tests/frontend', entry.name));
 
-    // Check for frontend test files
-    let testFiles: string[] = [];
-    try {
-      const entries = await fs.readdir(testsDir, { withFileTypes: true });
-      testFiles = entries
-        .filter(entry => entry.isFile() && /\.test\.(ts|tsx|js|jsx)$/.test(entry.name))
-        .map(entry => join('tests/frontend', entry.name));
-    } catch (error) {
-      return {
-        file: __filename,
-        type: 'runtime',
-        severity: 'error',
-        message: 'Failed to read tests directory',
-        line: 1,
-        column: 1
-      };
-    }
-
-    if (testFiles.length === 0) {
-      return {
-        file: __filename,
-        type: 'runtime',
-        severity: 'info',
-        message: 'No frontend tests found (optional)',
-        line: 1,
-        column: 1
-      };
-    }
-
-    // Validate test files
-    const invalidFiles = [];
+    const results: TestResult[] = [];
     for (const file of testFiles) {
       try {
-        const content = await fs.readFile(join(__dirname, '../..', file), 'utf-8');
-        if (!content.includes('export') || !content.includes('runTest')) {
-          invalidFiles.push(file);
+        const testModule = await import(file);
+        if (typeof testModule.runTest === 'function') {
+          const result = await testModule.runTest();
+          results.push(result);
         }
       } catch (error) {
-        invalidFiles.push(file);
+        results.push({
+          file,
+          type: 'runtime',
+          severity: 'error',
+          message: error instanceof Error ? error.message : String(error)
+        });
       }
     }
 
-    if (invalidFiles.length > 0) {
-      return {
-        file: __filename,
-        type: 'runtime',
-        severity: 'error',
-        message: `Invalid test files: ${invalidFiles.join(', ')}`,
-        line: 1,
-        column: 1
-      };
-    }
-
-    return {
-      file: __filename,
-      type: 'runtime',
-      severity: 'info',
-      message: `Found ${testFiles.length} frontend test files`,
-      line: 1,
-      column: 1
-    };
+    return results;
   } catch (error) {
-    return {
-      file: __filename,
+    return [{
+      file: 'frontend-tests',
       type: 'runtime',
       severity: 'error',
-      message: error instanceof Error ? error.message : String(error),
-      line: 1,
-      column: 1
-    };
+      message: error instanceof Error ? error.message : String(error)
+    }];
   }
 } 

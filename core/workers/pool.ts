@@ -1,181 +1,151 @@
-import { Worker } from 'worker_threads';
+import { ChildProcess } from 'child_process';
 import { join } from 'path';
-import { TestSuiteConfig } from '../config';
+import { Config } from '../config';
 import { TestResult } from '../state';
-import { WorkerMetricsManager } from './metrics';
-import { WorkerMessageHandler } from './messageHandler';
+import { WorkerLifecycle } from './workerLifecycle';
+import { WorkerMetricsManager, WorkerStatus } from './metrics';
 import { ErrorInterceptor } from '../../monitoring/realtime/errorInterceptor';
 
-type ResultCallback = (result: TestResult) => void;
-type CompleteCallback = () => void;
-
-const MAX_MEMORY_PER_WORKER = 512 * 1024 * 1024; // 512MB
-const WORKER_HEALTH_CHECK_INTERVAL = 5000; // 5 seconds
-
 export class WorkerPool {
-  private workers: Worker[] = [];
-  private queue: string[] = [];
-  private activeWorkers = 0;
+  private workers: Map<string, ChildProcess> = new Map();
   private metricsManager: WorkerMetricsManager;
+  private lifecycle: WorkerLifecycle;
   private errorInterceptor: ErrorInterceptor;
-  private healthCheckInterval?: NodeJS.Timeout;
+  private isShuttingDown: boolean = false;
 
-  public constructor(
-    private config: TestSuiteConfig,
-    private onResult: ResultCallback,
-    private onComplete: CompleteCallback
+  constructor(
+    private config: Config,
+    private onResult: (result: TestResult) => void,
+    private onMetrics: (metrics: { totalMemory: number; averageMemory: number }) => void
   ) {
     this.metricsManager = new WorkerMetricsManager();
-    this.errorInterceptor = ErrorInterceptor.getInstance();
-    this.setupHealthCheck();
-  }
-
-  private setupHealthCheck(): void {
-    this.healthCheckInterval = setInterval(() => {
-      this.workers.forEach(worker => {
-        const metrics = this.metricsManager.getMetrics(worker);
-        if (!metrics) return;
-
-        if (metrics.memoryUsage > MAX_MEMORY_PER_WORKER) {
-          this.errorInterceptor.trackError('runtime', new Error(`Worker exceeded memory limit: ${metrics.file}`));
-          this.restartWorker(worker);
-        }
-
-        if (Date.now() - metrics.lastActivity > this.config.testTimeout!) {
-          this.errorInterceptor.trackError('runtime', new Error(`Worker timed out: ${metrics.file}`));
-          this.restartWorker(worker);
-        }
-      });
-    }, WORKER_HEALTH_CHECK_INTERVAL);
-  }
-
-  private async restartWorker(worker: Worker): Promise<void> {
-    const metrics = this.metricsManager.getMetrics(worker);
-    if (!metrics?.file) return;
-
-    this.queue.unshift(metrics.file);
-    await worker.terminate();
-    
-    const index = this.workers.indexOf(worker);
-    if (index !== -1) {
-      this.workers.splice(index, 1);
-      this.activeWorkers--;
-    }
-
-    this.metricsManager.deleteMetrics(worker);
-    await this.createWorker();
-  }
-
-  public async start(files: string[]): Promise<void> {
-    this.queue = [...files];
-    const workerCount = Math.min(
-      this.config.workers || Math.max(1, require('os').cpus().length - 1),
-      files.length
+    this.lifecycle = new WorkerLifecycle(
+      this.handleResult.bind(this),
+      this.handleMetricsUpdate.bind(this)
     );
+    this.errorInterceptor = ErrorInterceptor.getInstance();
 
+    process.on('SIGTERM', () => this.stop());
+    process.on('SIGINT', () => this.stop());
+    process.on('exit', () => this.cleanup());
+  }
+
+  private handleResult(result: TestResult): void {
     try {
-      const promises = Array(workerCount).fill(0).map(() => this.createWorker());
-      await Promise.all(promises);
+      this.onResult(result);
+      this.updateMetrics();
+    } catch (error) {
+      this.errorInterceptor.trackError('runtime', error as Error, {
+        phase: 'result_handling',
+        result
+      });
+    }
+  }
 
-      const maxWaitTime = this.config.testTimeout || 30000;
-      const startTime = Date.now();
+  private handleMetricsUpdate(metrics: { pid: number; memory: number; startTime: number; status: WorkerStatus }): void {
+    try {
+      this.metricsManager.updateMetrics(metrics.pid, metrics);
+      this.updateMetrics();
+    } catch (error) {
+      this.errorInterceptor.trackError('runtime', error as Error, {
+        phase: 'metrics_update',
+        metrics
+      });
+    }
+  }
 
-      while (this.activeWorkers > 0 || this.queue.length > 0) {
-        if (Date.now() - startTime > maxWaitTime) {
-          this.errorInterceptor.trackError('runtime', new Error('Test suite global timeout'));
-          this.stop();
-          break;
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
+  async start(files: string[]): Promise<void> {
+    try {
+      const maxWorkers = this.config.parallelization?.maxWorkers || 1;
+      const chunks = this.chunkArray(files, maxWorkers);
+
+      for (const chunk of chunks) {
+        if (this.isShuttingDown) break;
+        const promises = chunk.map(file => this.startWorker(file));
+        await Promise.all(promises);
       }
     } catch (error) {
-      this.errorInterceptor.trackError('runtime', error instanceof Error ? error : new Error(String(error)));
-    } finally {
+      this.errorInterceptor.trackError('runtime', error as Error, {
+        phase: 'pool_start',
+        fileCount: files.length
+      });
+      throw error; // Re-throw to notify caller
+    }
+  }
+
+  private async startWorker(file: string): Promise<void> {
+    if (this.isShuttingDown) return;
+
+    try {
+      const env = { 
+        ...process.env, 
+        TS_NODE_PROJECT: join(process.cwd(), 'tsconfig.json'),
+        TEST_TIMEOUT: String(this.config.parallelization?.testTimeout || 30000)
+      };
+
+      const { worker } = await this.lifecycle.startWorker(
+        file,
+        this.config.parallelization?.testTimeout || 30000,
+        env
+      );
+
+      this.workers.set(file, worker);
+    } catch (error) {
+      this.errorInterceptor.trackError('runtime', error as Error, {
+        phase: 'worker_start',
+        file
+      });
+      throw error;
+    }
+  }
+
+  stop(): void {
+    try {
+      this.isShuttingDown = true;
+      for (const worker of this.workers.values()) {
+        this.lifecycle.stopWorker(worker);
+      }
       this.cleanup();
-      this.onComplete();
+    } catch (error) {
+      this.errorInterceptor.trackError('runtime', error as Error, {
+        phase: 'pool_stop'
+      });
     }
   }
 
   private cleanup(): void {
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval);
-    }
-    this.stop();
-  }
-
-  private async createWorker(): Promise<void> {
-    if (this.queue.length === 0) return;
-
-    const file = this.queue.shift();
-    if (!file) return;
-
-    try {
-      const worker = new Worker(join(__dirname, 'worker.js'), {
-        workerData: {
-          file,
-          config: {
-            ...this.config,
-            compilerOptions: {
-              ...this.config.compilerOptions,
-              allowJs: true,
-              module: 'commonjs',
-              esModuleInterop: true,
-              moduleResolution: 'node'
-            }
-          },
-          memoryLimit: MAX_MEMORY_PER_WORKER
-        },
-        resourceLimits: {
-          maxOldGenerationSizeMb: MAX_MEMORY_PER_WORKER / (1024 * 1024)
-        }
-      });
-
-      this.activeWorkers++;
-      this.workers.push(worker);
-      this.metricsManager.setMetrics(worker, {
-        memoryUsage: 0,
-        cpuUsage: 0,
-        startTime: Date.now(),
-        lastActivity: Date.now(),
-        file
-      });
-
-      const messageHandler = new WorkerMessageHandler(
-        worker,
-        this.metricsManager,
-        this.onResult,
-        () => {
-          this.activeWorkers--;
-          const index = this.workers.indexOf(worker);
-          if (index !== -1) {
-            this.workers.splice(index, 1);
-          }
-          this.metricsManager.deleteMetrics(worker);
-
-          if (this.queue.length > 0) {
-            this.createWorker();
-          }
-        }
-      );
-
-      messageHandler.setupMessageHandling(this.config.testTimeout || 30000);
-    } catch (error) {
-      this.errorInterceptor.trackError('runtime', error instanceof Error ? error : new Error(String(error)));
-      if (this.queue.length > 0) {
-        await this.createWorker();
-      }
-    }
-  }
-
-  public stop(): void {
-    this.workers.forEach(worker => worker.terminate());
-    this.workers = [];
-    this.queue = [];
-    this.activeWorkers = 0;
+    this.workers.clear();
     this.metricsManager.clear();
+    this.lifecycle.cleanup();
   }
 
-  public getMetrics(): { totalMemory: number; averageMemory: number; peakMemory: number } {
-    return this.metricsManager.getAggregateMetrics();
+  private updateMetrics(): void {
+    try {
+      const { totalMemory, averageMemory } = this.metricsManager.getAggregateMetrics();
+      this.onMetrics({ totalMemory, averageMemory });
+    } catch (error) {
+      this.errorInterceptor.trackError('runtime', error as Error, {
+        phase: 'metrics_aggregation'
+      });
+    }
+  }
+
+  getMetrics(): { totalMemory: number; averageMemory: number; workerStatuses: Record<string, number> } {
+    try {
+      return this.metricsManager.getAggregateMetrics();
+    } catch (error) {
+      this.errorInterceptor.trackError('runtime', error as Error, {
+        phase: 'metrics_retrieval'
+      });
+      return { totalMemory: 0, averageMemory: 0, workerStatuses: {} };
+    }
+  }
+
+  private chunkArray<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
   }
 }
