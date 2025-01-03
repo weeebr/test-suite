@@ -50,7 +50,7 @@
 - Error Categories:
   - Build errors (webpack, typescript)
   - Runtime errors (node, browser)
-  - Network errors (http, ws)
+  - Network errors (http, ws, no bandwidth and response metrics)
   - Integration errors (api, db)
   - Component errors (react, vue)
   - Performance errors (memory, cpu)
