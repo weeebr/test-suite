@@ -1,6 +1,6 @@
 import { TestResult } from '../../../core/state';
 import { TestRunner } from '../../../core/runner';
-import { Config, defaultConfig } from '../../../core/config';
+import { defaultConfig } from '../../../core/config';
 
 async function validateGroupCreation(): Promise<TestResult> {
   const runner = new TestRunner({

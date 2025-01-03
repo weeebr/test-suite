@@ -95,6 +95,9 @@ export class NetworkEventTracker {
 
   public trackFetchResponse(requestId: string, response: Response, startTime: number): void {
     const duration = Date.now() - startTime;
+    const request = this.activeRequests.get(requestId);
+    if (!request) return;
+
     const event: NetworkEvent = {
       type: 'response',
       method: response.type,
@@ -102,11 +105,13 @@ export class NetworkEventTracker {
       statusCode: response.status,
       duration,
       timestamp: Date.now(),
-      headers: Object.fromEntries(response.headers.entries())
+      headers: Object.fromEntries(response.headers.entries()),
+      metrics: request.metrics
     };
 
     this.events.push(event);
     this.emitEvent(event);
+    this.activeRequests.delete(requestId);
 
     if (response.status >= 400) {
       this.errorInterceptor.trackError('network', new Error(`HTTP ${response.status}`));
@@ -126,12 +131,17 @@ export class NetworkEventTracker {
     this.events.push(event);
     this.emitEvent(event);
     this.activeRequests.delete(requestId);
-    this.errorInterceptor.trackError('network', error);
+    this.errorInterceptor.trackError('network', error, {
+      url: request?.req.url,
+      method: request?.req.method,
+      requestId
+    });
   }
 
   public trackTimeout(requestId: string): void {
     const request = this.activeRequests.get(requestId);
     if (request) {
+      const error = new Error(`Request timeout after ${Date.now() - request.startTime}ms`);
       const event: NetworkEvent = {
         type: 'timeout',
         method: request.req.method,
@@ -142,6 +152,12 @@ export class NetworkEventTracker {
       this.events.push(event);
       this.emitEvent(event);
       this.activeRequests.delete(requestId);
+      this.errorInterceptor.trackError('timeout', error, {
+        url: request.req.url,
+        method: request.req.method,
+        requestId,
+        duration: Date.now() - request.startTime
+      });
     }
   }
 } 

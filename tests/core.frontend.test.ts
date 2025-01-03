@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { TestResult } from '@/core/state';
+import { TestResult } from '@core/state';
 import { promises as fs } from 'fs';
 
 export async function runTest(): Promise<TestResult> {

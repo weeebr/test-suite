@@ -7,12 +7,46 @@ export interface BaseEvent {
 }
 
 // Error types
-export type ErrorCategory = 'runtime' | 'network' | 'build' | 'test' | 'lint' | 'module';
+export type ErrorCategory = 
+  | 'build'      // Webpack, TypeScript compilation
+  | 'runtime'    // Node.js runtime errors
+  | 'network'    // HTTP, WebSocket, API calls
+  | 'console'    // Console.error, warn, info
+  | 'process'    // Process exits, signals
+  | 'memory'     // Memory leaks, limits
+  | 'timeout'    // Test timeouts
+  | 'assertion'  // Test assertions
+  | 'validation' // Type checks, schema validation
+  | 'system'     // OS, file system
+  | 'typescript' // TypeScript compiler errors
+  | 'internal'   // Error interceptor internal errors
+  | 'uncaught'   // Uncaught exceptions and rejections
+  | 'unknown';   // Uncategorized
+
+export interface BaseErrorContext {
+  severity?: 'info' | 'warning' | 'error';
+  phase?: string;
+  source?: string;
+  details?: {
+    originalArgs?: unknown[];
+    hasError?: boolean;
+    stack?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export interface ErrorContext extends BaseErrorContext {
+  category: ErrorCategory;
+  severity: 'info' | 'warning' | 'error';
+  source: string;
+  timestamp: number;
+}
 
 export interface ErrorEvent extends BaseEvent {
   type: ErrorCategory;
   error: Error;
-  context: Record<string, unknown>;
+  context: BaseErrorContext;
   stack?: string;
   line?: number;
   column?: number;

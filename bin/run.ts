@@ -26,10 +26,8 @@ async function main() {
   else if (isBackend) testType = 'backend';
 
   const rootDir = process.cwd();
-  
-  // Load configs in order: default -> external -> auto-detected
   let config = { ...defaultConfig };
-  
+
   // Load external config if exists
   const externalConfig = await loadExternalConfig(rootDir);
   config = { ...config, ...externalConfig };
@@ -58,14 +56,9 @@ async function main() {
     }
   }
 
-  // Determine test directories based on type
-  const testDirs = ['tests/core', 'tests/management', 'tests/monitoring', 'tests/integration'];
-
-  process.stdout.write('\n🧪 Running tests');
   const startTime = Date.now();
-  const progressInterval = setInterval(() => {
-    process.stdout.write(`\r🧪 Running tests...`);
-  }, 500);
+  const progressInterval = setInterval(() => {}, 500);
+  process.stdout.write(`\n\n`);
 
   let cleanupDone = false;
   const cleanup = () => {
@@ -102,7 +95,7 @@ async function main() {
     const results = await runner.runTests();
     cleanup();
 
-    process.stdout.write(`\r🧪 Running tests... [${results.length}/${results.length}]\n\n`);
+    process.stdout.write(`\n\n`);
 
     // Print results
     console.log('📊 Test Summary');

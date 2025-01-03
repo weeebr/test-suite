@@ -5,6 +5,7 @@ import { TestResult } from '../state';
 import { WorkerLifecycle } from './workerLifecycle';
 import { WorkerMetricsManager, WorkerStatus } from './metrics';
 import { ErrorInterceptor } from '../../monitoring/realtime/errorInterceptor';
+import { formatErrorMessage } from '../../monitoring/realtime/errorFormatter';
 
 export class WorkerPool {
   private workers: Map<string, ChildProcess> = new Map();
@@ -31,15 +32,8 @@ export class WorkerPool {
   }
 
   private handleResult(result: TestResult): void {
-    try {
-      this.onResult(result);
-      this.updateMetrics();
-    } catch (error) {
-      this.errorInterceptor.trackError('runtime', error as Error, {
-        phase: 'result_handling',
-        result
-      });
-    }
+    this.onResult(result);
+    this.updateMetrics();
   }
 
   private handleMetricsUpdate(metrics: { pid: number; memory: number; startTime: number; status: WorkerStatus }): void {
@@ -47,10 +41,14 @@ export class WorkerPool {
       this.metricsManager.updateMetrics(metrics.pid, metrics);
       this.updateMetrics();
     } catch (error) {
-      this.errorInterceptor.trackError('runtime', error as Error, {
-        phase: 'metrics_update',
-        metrics
-      });
+      if (error instanceof Error && !error.message.includes('ENOENT')) {
+        this.errorInterceptor.trackError('memory', error, {
+          message: formatErrorMessage(error, 'memory', {
+            phase: 'metrics_update',
+            metrics
+          })
+        });
+      }
     }
   }
 
@@ -65,11 +63,13 @@ export class WorkerPool {
         await Promise.all(promises);
       }
     } catch (error) {
-      this.errorInterceptor.trackError('runtime', error as Error, {
-        phase: 'pool_start',
-        fileCount: files.length
+      this.errorInterceptor.trackError('process', error as Error, {
+        message: formatErrorMessage(error as Error, 'process', {
+          phase: 'pool_start',
+          metrics: { fileCount: files.length }
+        })
       });
-      throw error; // Re-throw to notify caller
+      throw error;
     }
   }
 
@@ -91,26 +91,24 @@ export class WorkerPool {
 
       this.workers.set(file, worker);
     } catch (error) {
-      this.errorInterceptor.trackError('runtime', error as Error, {
-        phase: 'worker_start',
-        file
-      });
+      if (error instanceof Error && !error.message.includes('ENOENT')) {
+        this.errorInterceptor.trackError('process', error, {
+          message: formatErrorMessage(error, 'process', {
+            phase: 'worker_start',
+            file
+          })
+        });
+      }
       throw error;
     }
   }
 
   stop(): void {
-    try {
-      this.isShuttingDown = true;
-      for (const worker of this.workers.values()) {
-        this.lifecycle.stopWorker(worker);
-      }
-      this.cleanup();
-    } catch (error) {
-      this.errorInterceptor.trackError('runtime', error as Error, {
-        phase: 'pool_stop'
-      });
+    this.isShuttingDown = true;
+    for (const worker of this.workers.values()) {
+      this.lifecycle.stopWorker(worker);
     }
+    this.cleanup();
   }
 
   private cleanup(): void {
@@ -124,9 +122,13 @@ export class WorkerPool {
       const { totalMemory, averageMemory } = this.metricsManager.getAggregateMetrics();
       this.onMetrics({ totalMemory, averageMemory });
     } catch (error) {
-      this.errorInterceptor.trackError('runtime', error as Error, {
-        phase: 'metrics_aggregation'
-      });
+      if (error instanceof Error && !error.message.includes('ENOENT')) {
+        this.errorInterceptor.trackError('memory', error, {
+          message: formatErrorMessage(error, 'memory', {
+            phase: 'metrics_aggregation'
+          })
+        });
+      }
     }
   }
 
@@ -134,9 +136,13 @@ export class WorkerPool {
     try {
       return this.metricsManager.getAggregateMetrics();
     } catch (error) {
-      this.errorInterceptor.trackError('runtime', error as Error, {
-        phase: 'metrics_retrieval'
-      });
+      if (error instanceof Error && !error.message.includes('ENOENT')) {
+        this.errorInterceptor.trackError('memory', error, {
+          message: formatErrorMessage(error, 'memory', {
+            phase: 'metrics_retrieval'
+          })
+        });
+      }
       return { totalMemory: 0, averageMemory: 0, workerStatuses: {} };
     }
   }

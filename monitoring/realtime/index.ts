@@ -1,35 +1,41 @@
-import { TestSuiteConfig } from '../../core/config';
 import * as chokidar from 'chokidar';
 import * as path from 'path';
+import { setupTypeScriptErrorHandling, watchTypeScriptErrors } from './typescriptErrorInterceptor';
+import { ErrorInterceptor } from './errorInterceptor';
 
 export { ErrorInterceptor } from './errorInterceptor';
-export { BuildMonitor } from './buildMonitor';
-export { NetworkMonitor } from './networkMonitor';
+export { NetworkEventTracker } from './networkEventTracker';
+export { ConsoleInterceptor } from './consoleInterceptor';
+export { ImpactAnalyzer } from './impactAnalyzer';
 
 export class FileSystemMonitor {
-  private config: TestSuiteConfig;
-  private watcher: chokidar.FSWatcher | null = null;
+  private watcher: chokidar.FSWatcher;
 
-  constructor(config: TestSuiteConfig) {
-    this.config = config;
-  }
-
-  start(): void {
-    if (this.watcher) return;
-    const patterns = this.config.targetDirs.map(dir => 
-      path.join(dir, this.config.testPattern?.source || '**/*.test.ts')
-    );
-    this.watcher = chokidar.watch(patterns, {
-      ignored: this.config.exclude || ['**/node_modules/**', '**/dist/**'],
-      persistent: true,
-      cwd: this.config.rootDir
+  constructor(private basePath: string) {
+    this.watcher = chokidar.watch(basePath, {
+      ignored: /(^|[\/\\])\../, // ignore dotfiles
+      persistent: true
     });
   }
 
-  onEvent(callback: (event: { type: string; path: string }) => void): void {
-    if (!this.watcher) return;
-    this.watcher.on('add', path => callback({ type: 'add', path }));
-    this.watcher.on('change', path => callback({ type: 'change', path }));
-    this.watcher.on('unlink', path => callback({ type: 'unlink', path }));
+  public watch(dir: string): void {
+    this.watcher.add(path.join(this.basePath, dir));
   }
+
+  public close(): void {
+    this.watcher.close();
+  }
+}
+
+export function initializeMonitoring(): void {
+  const errorInterceptor = ErrorInterceptor.getInstance();
+  
+  // Initialize error handlers
+  setupTypeScriptErrorHandling();
+  watchTypeScriptErrors();
+  
+  // Initialize other monitoring systems
+  errorInterceptor.registerErrorHandler('typescript', (error) => {
+    console.error('TypeScript Error:', error.message);
+  });
 } 

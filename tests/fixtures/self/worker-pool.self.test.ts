@@ -1,6 +1,6 @@
 import { TestResult } from '../../../core/state';
 import { WorkerPool } from '../../../core/workers/pool';
-import { Config, defaultConfig } from '../../../core/config';
+import { defaultConfig } from '../../../core/config';
 
 async function validateWorkerCreation(): Promise<TestResult> {
   const results: TestResult[] = [];
