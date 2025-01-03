@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@core/*": ["core/*"],
+      "@management/*": ["management/*"],
+      "@monitoring/*": ["monitoring/*"],
+      "@frontend/*": ["frontend/*"],
+      "@tests/*": ["tests/*"],
+      "@metrics": ["management/metrics"],
+      "@state": ["core/state"],
+      "@config": ["core/config"]
+    }
+  },
+  "include": [
+    "tests/**/*.ts",
+    "core/**/*.ts",
+    "management/**/*.ts",
+    "monitoring/**/*.ts",
+    "frontend/**/*.ts"
+  ]
+} 

@@ -1,81 +1,119 @@
 import { TestRunner } from '../core/runner';
-import { ErrorInterceptor } from '../monitoring/realtime/errorInterceptor';
-import { TestResult } from '../core/state';
+import { defaultConfig } from '../core/config';
+import { register } from 'ts-node';
+import { join } from 'path';
 
-function parseArgs(): { targetPath?: string; testType: 'frontend' | 'backend' | 'self' | 'all'; watchMode: boolean } {
+// Register ts-node with test config
+register({
+  transpileOnly: true,
+  project: join(__dirname, '..', 'tsconfig.test.json'),
+  require: ['tsconfig-paths/register']
+});
+
+async function main() {
   const args = process.argv.slice(2);
-  const watchMode = args.includes('--watch');
+  const isSelf = args.includes('--self');
+  const isFrontend = args.includes('--frontend');
+  const isBackend = args.includes('--backend');
+  const isWatch = args.includes('--watch');
+
   let testType: 'frontend' | 'backend' | 'self' | 'all' = 'all';
-  let targetPath: string | undefined;
+  if (isSelf) testType = 'self';
+  else if (isFrontend) testType = 'frontend';
+  else if (isBackend) testType = 'backend';
 
-  if (args.includes('--frontend')) testType = 'frontend';
-  if (args.includes('--backend')) testType = 'backend';
-  if (args.includes('--self')) testType = 'self';
-  if (args.includes('--all')) testType = 'all';
+  // Determine test directories based on type
+  const testDirs = ['tests/core', 'tests/management', 'tests/monitoring', 'tests/integration'];
 
-  const pathIndex = args.indexOf('--path');
-  if (pathIndex !== -1 && args[pathIndex + 1]) {
-    targetPath = args[pathIndex + 1];
-  }
+  process.stdout.write('\n🧪 Running tests');
+  const startTime = Date.now();
+  const progressInterval = setInterval(() => {
+    process.stdout.write(`\r🧪 Running tests...`);
+  }, 500);
 
-  return { targetPath, testType, watchMode };
-}
+  let cleanupDone = false;
+  const cleanup = () => {
+    if (!cleanupDone) {
+      cleanupDone = true;
+      clearInterval(progressInterval);
+    }
+  };
 
-function printResults(results: TestResult[]): void {
-  const errors = results.filter(r => r.severity === 'error');
-  const warnings = results.filter(r => r.severity === 'warning');
+  // Ensure cleanup on process signals
+  process.on('SIGINT', () => {
+    cleanup();
+    process.exit(130);
+  });
+  process.on('SIGTERM', () => {
+    cleanup();
+    process.exit(143);
+  });
 
-  if (errors.length > 0) {
-    console.log('\n❌ Errors:');
-    console.log('─────────');
-    errors.forEach(error => {
-      console.log(`${error.file}:${error.line || 1} - ${error.message}`);
-    });
-  }
-
-  if (warnings.length > 0) {
-    console.log('\n⚠️  Warnings:');
-    console.log('───────────');
-    warnings.forEach(warning => {
-      console.log(`${warning.file}:${warning.line || 1} - ${warning.message}`);
-    });
-  }
-
-  const total = results.length;
-  const passed = results.filter(r => r.severity === 'info').length;
-
-  console.log('\n📊 Summary:');
-  console.log('──────────');
-  console.log(`Total tests: ${total}`);
-  console.log(`Passed: ${passed} ✓`);
-  if (errors.length > 0) console.log(`Failed: ${errors.length} ❌`);
-  if (warnings.length > 0) console.log(`Warnings: ${warnings.length} ⚠️`);
-}
-
-async function main(): Promise<void> {
-  const errorInterceptor = ErrorInterceptor.getInstance();
-  
   try {
-    const { targetPath, testType, watchMode } = parseArgs();
     const runner = new TestRunner({
+      ...defaultConfig,
       rootDir: process.cwd(),
-      targetDirs: targetPath ? [targetPath] : ['.'],
-      testPattern: /\.(test|spec)\.(ts|tsx|js|jsx)$/,
-      watchMode,
-      testType
-    }, true);
+      targetDirs: testDirs,
+      testPattern: /\.test\.ts$/,
+      watchMode: isWatch,
+      testType,
+      parallelization: {
+        enabled: true,
+        maxWorkers: Math.max(1, Math.floor(require('os').cpus().length / 2)),
+        groupTimeout: 60000,
+        testTimeout: 30000
+      }
+    });
 
     const results = await runner.runTests();
-    printResults(results);
+    cleanup();
 
-    const hasErrors = results.some(r => r.severity === 'error');
-    if (hasErrors) {
-      process.exit(1);
+    process.stdout.write(`\r🧪 Running tests... [${results.length}/${results.length}]\n\n`);
+
+    // Print results
+    console.log('📊 Test Summary');
+    console.log('──────────────');
+    console.log(`Total: ${results.length} tests`);
+    
+    const passed = results.filter(r => r.severity === 'info').length;
+    const warnings = results.filter(r => r.severity === 'warning').length;
+    const errors = results.filter(r => r.severity === 'error').length;
+
+    if (passed > 0) console.log(`Passed: ${passed} ✓`);
+    if (warnings > 0) console.log(`Warnings: ${warnings} ⚠️`);
+    if (errors > 0) {
+      console.log(`Failed: ${errors} ❌`);
+      console.log('\nFailed Tests:');
+      console.log('────────────');
+      results
+        .filter(r => r.severity === 'error')
+        .forEach(r => {
+          console.log(`❌ ${r.file}`);
+          console.log(`   ${r.message}`);
+          if (r.code) console.log(`   Code: ${r.code}`);
+          if (r.stack) console.log(`   ${r.stack.split('\n')[0]}`);
+          console.log('');
+        });
     }
+
+    const duration = Date.now() - startTime;
+    console.log(`\nTime: ${duration}ms`);
+
+    // Exit with appropriate code
+    process.exit(errors > 0 ? 1 : 0);
   } catch (error) {
-    errorInterceptor.trackError('runtime', error instanceof Error ? error : new Error(String(error)));
+    cleanup();
+    console.error('\n❌ Test runner error:');
+    console.error(error);
     process.exit(1);
   }
 }
+
+// Handle unhandled rejections
+process.on('unhandledRejection', (error) => {
+  console.error('\n❌ Unhandled rejection:');
+  console.error(error);
+  process.exit(1);
+});
 
 main(); 

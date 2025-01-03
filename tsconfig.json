@@ -20,7 +20,11 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "@test-suite/*": ["./*"]
+      "@/*": ["./*"],
+      "@core/*": ["core/*"],
+      "@management/*": ["management/*"],
+      "@monitoring/*": ["monitoring/*"],
+      "@frontend/*": ["frontend/*"]
     },
     "esModuleInterop": true,
     "experimentalDecorators": true,

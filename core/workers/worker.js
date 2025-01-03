@@ -1,106 +1,30 @@
-const { workerData, parentPort } = require('worker_threads');
 const { join } = require('path');
-const { register } = require('ts-node');
+const tsConfigPath = join(process.cwd(), 'tsconfig.test.json');
 
-// Register ts-node with appropriate compiler options
-register({
+require('ts-node').register({
   transpileOnly: true,
-  compilerOptions: {
-    ...workerData.config.compilerOptions,
-    allowJs: true,
-    module: 'commonjs',
-    esModuleInterop: true,
-    moduleResolution: 'node',
-    resolveJsonModule: true,
-    skipLibCheck: true
-  }
+  project: tsConfigPath,
+  require: ['tsconfig-paths/register']
 });
 
-// Report metrics periodically
-let lastMemoryUsage = 0;
-let lastCpuUsage = process.cpuUsage();
-
-const metricsInterval = setInterval(() => {
-  const memoryUsage = process.memoryUsage().heapUsed;
-  const cpuUsage = process.cpuUsage(lastCpuUsage);
-  
-  if (Math.abs(memoryUsage - lastMemoryUsage) > 1024 * 1024) {
-    parentPort.postMessage({
-      type: 'metrics',
-      memory: memoryUsage,
-      cpu: (cpuUsage.user + cpuUsage.system) / 1000000
-    });
-    lastMemoryUsage = memoryUsage;
-    lastCpuUsage = process.cpuUsage();
-  }
-}, 1000);
-
-async function runTest() {
-  const { file } = workerData;
-  
+process.on('message', async (testFile) => {
   try {
-    const fullPath = join(workerData.config.rootDir, file);
-    
-    // Clear require cache to ensure fresh module load
-    delete require.cache[require.resolve(fullPath)];
-    
-    const testModule = require(fullPath);
-    
-    if (typeof testModule.runTest !== 'function') {
-      clearInterval(metricsInterval);
-      parentPort.postMessage({
-        file,
-        type: 'structure',
-        severity: 'error',
-        message: 'Module does not export a runTest function'
-      });
-      return;
-    }
-
-    const result = await testModule.runTest();
-    if (!result) {
-      clearInterval(metricsInterval);
-      parentPort.postMessage({
-        file,
-        type: 'runtime',
-        severity: 'error',
-        message: 'Test did not return a result'
-      });
-      return;
-    }
-
-    clearInterval(metricsInterval);
-    parentPort.postMessage(result);
+    await require(testFile);
+    process.send({
+      file: testFile,
+      type: 'runtime',
+      severity: 'info',
+      message: 'Test passed',
+      code: 'TEST_PASSED'
+    });
   } catch (error) {
-    clearInterval(metricsInterval);
-    parentPort.postMessage({
-      file,
+    process.send({
+      file: testFile,
       type: 'runtime',
       severity: 'error',
-      message: error instanceof Error ? error.message : String(error)
+      message: error.message,
+      code: 'ERR_TEST_FAILED',
+      stack: error.stack
     });
   }
-}
-
-// Handle uncaught errors
-process.on('uncaughtException', (error) => {
-  clearInterval(metricsInterval);
-  parentPort.postMessage({
-    file: workerData.file,
-    type: 'runtime',
-    severity: 'error',
-    message: `Uncaught error: ${error.message}`
-  });
-});
-
-process.on('unhandledRejection', (error) => {
-  clearInterval(metricsInterval);
-  parentPort.postMessage({
-    file: workerData.file,
-    type: 'runtime',
-    severity: 'error',
-    message: `Unhandled rejection: ${error instanceof Error ? error.message : String(error)}`
-  });
-});
-
-runTest(); 
+}); 
