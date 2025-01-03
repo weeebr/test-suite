@@ -1,6 +1,7 @@
 import { TestRunner } from '../core/runner';
 import { defaultConfig } from '../core/config';
 import { detectProject } from '../core/config/projectDetector';
+import { loadExternalConfig } from '../core/config/configLoader';
 import { register } from 'ts-node';
 import { join } from 'path';
 
@@ -25,7 +26,13 @@ async function main() {
   else if (isBackend) testType = 'backend';
 
   const rootDir = process.cwd();
+  
+  // Load configs in order: default -> external -> auto-detected
   let config = { ...defaultConfig };
+  
+  // Load external config if exists
+  const externalConfig = await loadExternalConfig(rootDir);
+  config = { ...config, ...externalConfig };
 
   // Auto-detect project type when --auto flag is used
   if (isAuto) {
@@ -33,7 +40,7 @@ async function main() {
     config = {
       ...config,
       projectType: projectInfo.type,
-      targetDirs: projectInfo.testDirs,
+      targetDirs: [...new Set([...config.targetDirs, ...projectInfo.testDirs])],
       autoDetect: true,
       integrationMode: {
         enabled: true,

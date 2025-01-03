@@ -7,6 +7,13 @@
     "bin": {
         "test-suite": "./bin/run.js"
     },
+    "files": [
+        "dist/",
+        "bin/*.js",
+        "examples/templates/",
+        "README.md",
+        "LICENSE"
+    ],
     "scripts": {
         "build": "tsc",
         "test": "yarn test:self && yarn test:frontend && yarn test:backend",
@@ -23,7 +30,8 @@
         "clean": "rimraf dist coverage",
         "prepare": "yarn clean && yarn build",
         "test:auto": "ts-node bin/run.ts --auto",
-        "test:auto:watch": "ts-node bin/run.ts --auto --watch"
+        "test:auto:watch": "ts-node bin/run.ts --auto --watch",
+        "init": "ts-node bin/init.ts"
     },
     "keywords": [
         "test",
@@ -54,5 +62,9 @@
     },
     "engines": {
         "node": ">=14.0.0"
+    },
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
     }
 }

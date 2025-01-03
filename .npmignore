@@ -1,0 +1,38 @@
+# Source
+src/
+tests/
+core/
+management/
+monitoring/
+validation/
+
+# Development
+.git/
+.github/
+.vscode/
+.idea/
+*.log
+.DS_Store
+
+# Build artifacts
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Config files
+tsconfig.json
+tsconfig.test.json
+.eslintrc*
+.prettierrc*
+
+# Development scripts
+bin/*.ts
+!bin/*.js
+
+# Documentation
+CONTRIBUTING.md
+CHANGELOG.md
+
+# Only include dist/examples templates
+examples/*
+!examples/templates/ 

@@ -267,3 +267,56 @@ module.exports = {
   outputFormat: 'junit',
   outputFile: 'test-results.xml'
 }; 
+
+### Example Configurations
+
+#### React Project
+```typescript
+// test-suite.config.js
+module.exports = {
+  testPattern: {
+    test: /\.(test|spec)\.(ts|tsx|js|jsx)$/,
+    unit: /\.unit\.(test|spec)\.(ts|tsx|js|jsx)$/,
+    integration: /\.integration\.(test|spec)\.(ts|tsx|js|jsx)$/
+  },
+  targetDirs: [
+    'src/**/__tests__',
+    'src/**/*.test.*',
+    'tests'
+  ],
+  parallelization: {
+    enabled: true,
+    maxWorkers: 4,
+    testTimeout: 10000
+  }
+};
+```
+
+#### Node.js Project
+```typescript
+// test-suite.config.js
+module.exports = {
+  testPattern: {
+    test: /\.(test|spec)\.(ts|js)$/,
+    unit: /\.unit\.(test|spec)\.(ts|js)$/,
+    integration: /\.integration\.(test|spec)\.(ts|js)$/
+  },
+  targetDirs: [
+    'src/**/__tests__',
+    'tests',
+    'api/**/*.test.*'
+  ],
+  parallelization: {
+    enabled: true,
+    maxWorkers: 2,
+    testTimeout: 30000
+  },
+  outputFormat: 'junit'
+};
+```
+
+### Supported Config Formats
+- `test-suite.config.js`
+- `test-suite.config.ts`
+- `.test-suiterc.js`
+- `.test-suiterc.json` 
