@@ -1,6 +1,6 @@
 # Test Suite
 
-A lightweight, state-aware TypeScript test runner that tracks file changes and only runs tests on modified files.
+A parallel-first, TypeScript-native test runner with granular test grouping and comprehensive state management for frontend, backend, and self-test scenarios.
 
 ## Features
 
