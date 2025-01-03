@@ -1,0 +1,99 @@
+{
+    "name": "test-suite",
+    "version": "1.0.0",
+    "description": "Embeddable TypeScript test suite with state management",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "bin": {
+        "test-suite": "./dist/bin/run.js"
+    },
+    "scripts": {
+        "build": "tsc",
+        "test": "ts-node bin/run.ts --self --frontend",
+        "test:self": "ts-node bin/run.ts --self --frontend",
+        "test:frontend": "ts-node bin/run.ts --frontend --perf",
+        "test:backend": "ts-node bin/run.ts --backend --perf",
+        "test:watch": "ts-node bin/run.ts --all --watch",
+        "validate": "ts-node bin/validateStructure.ts",
+        "rename": "ts-node bin/renameFiles.ts",
+        "clean": "rimraf dist coverage",
+        "prepare": "yarn clean && yarn build",
+        "prepack": "yarn build",
+        "postinstall": "yarn build"
+    },
+    "dependencies": {
+        "chalk": "^4.1.2",
+        "chokidar": "^3.5.3",
+        "cross-env": "^7.0.3",
+        "fast-glob": "^3.3.2",
+        "glob": "^10.3.10",
+        "nyc": "^15.1.0",
+        "rimraf": "^5.0.0",
+        "source-map-support": "^0.5.21",
+        "ts-node": "^10.0.0",
+        "tsconfig-paths": "^4.2.0",
+        "typescript": ">=4.0.0"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.0",
+        "@types/glob": "^8.1.0",
+        "@types/jest": "^29.5.14",
+        "@types/node": "^18.0.0",
+        "@typescript-eslint/eslint-plugin": "^5.0.0",
+        "@typescript-eslint/parser": "^5.0.0",
+        "eslint": "^8.0.0"
+    },
+    "peerDependencies": {
+        "typescript": ">=4.0.0"
+    },
+    "keywords": [
+        "typescript",
+        "testing",
+        "test-runner",
+        "state-management",
+        "embeddable",
+        "test-suite",
+        "frontend-testing",
+        "backend-testing"
+    ],
+    "files": [
+        "dist",
+        "bin",
+        "core",
+        "management",
+        "monitoring",
+        "validation",
+        "README.md",
+        "LICENSE"
+    ],
+    "nyc": {
+        "extends": "@istanbuljs/nyc-config-typescript",
+        "check-coverage": true,
+        "all": true,
+        "include": [
+            "core/**/*.ts",
+            "management/**/*.ts",
+            "monitoring/**/*.ts",
+            "validation/**/*.ts"
+        ],
+        "exclude": [
+            "**/*.d.ts",
+            "**/*.test.ts",
+            "coverage/**",
+            "dist/**"
+        ],
+        "reporter": [
+            "text",
+            "lcov"
+        ],
+        "branches": 80,
+        "lines": 80,
+        "functions": 80,
+        "statements": 80
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "author": "",
+    "license": "MIT"
+}

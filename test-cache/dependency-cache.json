@@ -1,0 +1,155 @@
+{
+  "version": "1.0.0",
+  "entries": {
+    "core/config/config.test.ts": {
+      "hash": "a800854c4e7d057daa65b9d4bc6c9f20b0ecc3dbb79b43308f003a47c585465e",
+      "timestamp": 1735875251900,
+      "dependencies": [],
+      "dependents": []
+    },
+    "core/runner/change-detector.test.ts": {
+      "hash": "fd066b21761e13746c6812c81247cb356383972ad482db6b80514768ceb82513",
+      "timestamp": 1735875251900,
+      "dependencies": [],
+      "dependents": []
+    },
+    "core/runner/impact-analyzer.test.ts": {
+      "hash": "1ddbcea6ce5ffcc2a591d25b880ad6238f88e397973dcd3528825763dd00df41",
+      "timestamp": 1735875251901,
+      "dependencies": [],
+      "dependents": []
+    },
+    "core/runner/resource-cleanup.test.ts": {
+      "hash": "3bdd0e8bb9dd44f5be25345764b05782d6b105ead3dc8a655807505c6e0a3799",
+      "timestamp": 1735875251901,
+      "dependencies": [],
+      "dependents": []
+    },
+    "core/runner/runner.test.ts": {
+      "hash": "21bd9df089d36cf13af5f5ad97d546a32ec1f71afddfbbad729dd42e9ccd04ad",
+      "timestamp": 1735875251902,
+      "dependencies": [],
+      "dependents": []
+    },
+    "core/runner/test-sequencer.test.ts": {
+      "hash": "438a7eab20b64e3afb8cfd0ec0a8f697eead9e05abb631592d58e23c15f1dd5f",
+      "timestamp": 1735875251902,
+      "dependencies": [],
+      "dependents": []
+    },
+    "core/state/state.test.ts": {
+      "hash": "1154e755d4cb476a34f0fe816255337a29f2738065410ae9d3866823777aa813",
+      "timestamp": 1735875251902,
+      "dependencies": [],
+      "dependents": []
+    },
+    "core/services/port-manager.test.ts": {
+      "hash": "dcb74dd46f7de8b5a9a90ab80ca27ec80059080cb349c7b89108f12d85d85500",
+      "timestamp": 1735875251903,
+      "dependencies": [],
+      "dependents": []
+    },
+    "core/workers/workers.test.ts": {
+      "hash": "fa1f7b20ccd5ee6c8c1c300b8f657ee385fe6a76826e59aa13dffab8108d82ae",
+      "timestamp": 1735875251903,
+      "dependencies": [],
+      "dependents": []
+    },
+    "tests/backend.test.ts": {
+      "hash": "a51e2e6b362e97273b0f4326dc07437327296045478f00abbb7d4ccb54fade6c",
+      "timestamp": 1735875251904,
+      "dependencies": [],
+      "dependents": []
+    },
+    "tests/basic.test.ts": {
+      "hash": "f4622704f7e83f2c4882af3077c44b093d270f8fcaa88de019028deb116b6c30",
+      "timestamp": 1735875251904,
+      "dependencies": [],
+      "dependents": []
+    },
+    "tests/core.test.ts": {
+      "hash": "7744874e5b8cf6064831a909b8434b925d7c58f2d5a54a7924daf9af208af211",
+      "timestamp": 1735875251904,
+      "dependencies": [],
+      "dependents": []
+    },
+    "tests/frontend.test.ts": {
+      "hash": "9e2febfd736436a50b998c21f5a4ff99c0fb11e5830aa0bfe4b78e6fe3ed93b4",
+      "timestamp": 1735875251905,
+      "dependencies": [],
+      "dependents": []
+    },
+    "tests/management.test.ts": {
+      "hash": "7cddf5b2d224cc65f88f8ed6ef0c23d3fa9eb20d74db7e52777681e80b3ebe05",
+      "timestamp": 1735875251905,
+      "dependencies": [],
+      "dependents": []
+    },
+    "frontend/tests/example.test.ts": {
+      "hash": "70d3f20b76455f95b3fb2a07eec964794e1da6a5f0b168d363b5396dd39215b1",
+      "timestamp": 1735875251905,
+      "dependencies": [],
+      "dependents": []
+    },
+    "management/issues/issue-manager.test.ts": {
+      "hash": "68cefee72c673a70f1558c63f0775b62097f26e9cdafb8fcd5554b2b416e172e",
+      "timestamp": 1735875251906,
+      "dependencies": [],
+      "dependents": []
+    },
+    "management/issues/issues.test.ts": {
+      "hash": "32ff4c1d0455ea2fa790688ced827491adb4e2f3b2f85c32b7f6a155d7fb0b6d",
+      "timestamp": 1735875251906,
+      "dependencies": [],
+      "dependents": []
+    },
+    "management/metrics/metrics.test.ts": {
+      "hash": "9e07649054a4ef1cb593510a25d3e69b1ee764b5c16983a33805a72c4baa5bc3",
+      "timestamp": 1735875251906,
+      "dependencies": [],
+      "dependents": []
+    },
+    "monitoring/metrics/memory-tracker.test.ts": {
+      "hash": "867e0feee5c3c3c9d162b7fef9c842eb663fb19d79b6368b77597c5a2267d2bc",
+      "timestamp": 1735875251907,
+      "dependencies": [],
+      "dependents": []
+    },
+    "monitoring/metrics/timing-tracker.test.ts": {
+      "hash": "9c42f3c90732adbffeb139ad3ed32113741f4357fa34a668361b2fe0bfec7975",
+      "timestamp": 1735875251907,
+      "dependencies": [],
+      "dependents": []
+    },
+    "monitoring/realtime/build-monitor.test.ts": {
+      "hash": "02023dd19cf8caa8fe17595106a6a5d6248e29a506fee6dc3dd92c53cc53a00d",
+      "timestamp": 1735875251907,
+      "dependencies": [],
+      "dependents": []
+    },
+    "monitoring/realtime/error-interceptor.test.ts": {
+      "hash": "ba295e39495650da3c6c91e332dfcb8d3e9b5cdbb828c6e9db34f6819d1d16ca",
+      "timestamp": 1735875251907,
+      "dependencies": [],
+      "dependents": []
+    },
+    "monitoring/realtime/impact-analyzer.test.ts": {
+      "hash": "17de22ea74a6cb0fff5f0f8681307e9073ac8b85f25257de6ec25f25b7fd36ff",
+      "timestamp": 1735875251908,
+      "dependencies": [],
+      "dependents": []
+    },
+    "monitoring/realtime/network-monitor.test.ts": {
+      "hash": "6b5956e2d1e6b572d6c0ee9ce9ec4e61d180504b7c8e61bb62bb72829b909808",
+      "timestamp": 1735875251908,
+      "dependencies": [],
+      "dependents": []
+    },
+    "monitoring/realtime/performance-monitor.test.ts": {
+      "hash": "d4f0943eb666c85e4d8050ad669e7a2cf57b18e97bcfe3839671b3a4b7f5ae1c",
+      "timestamp": 1735875251909,
+      "dependencies": [],
+      "dependents": []
+    }
+  }
+}

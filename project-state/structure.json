@@ -1,0 +1,117 @@
+{
+  "timestamp": 1735904025064,
+  "files": [
+    {
+      "path": "core/runner/runner.test.ts",
+      "size": 1305,
+      "lastModified": 1735867124720.0476
+    },
+    {
+      "path": "core/services/portManager.test.ts",
+      "size": 2454,
+      "lastModified": 1735877129060.7666
+    },
+    {
+      "path": "core/config/config.test.ts",
+      "size": 1981,
+      "lastModified": 1735867124720.3027
+    },
+    {
+      "path": "core/workers/workers.test.ts",
+      "size": 1391,
+      "lastModified": 1735867124760.1663
+    },
+    {
+      "path": "core/state/state.test.ts",
+      "size": 1656,
+      "lastModified": 1735867124720.2761
+    },
+    {
+      "path": "tests/backend.test.ts",
+      "size": 2402,
+      "lastModified": 1735870105616.4783
+    },
+    {
+      "path": "tests/basic.test.ts",
+      "size": 1978,
+      "lastModified": 1735870105611.1753
+    },
+    {
+      "path": "tests/core.test.ts",
+      "size": 2971,
+      "lastModified": 1735870105611.3586
+    },
+    {
+      "path": "tests/frontend.test.ts",
+      "size": 2414,
+      "lastModified": 1735870105611.258
+    },
+    {
+      "path": "tests/management.test.ts",
+      "size": 2868,
+      "lastModified": 1735879261456.3123
+    },
+    {
+      "path": "frontend/tests/example.test.ts",
+      "size": 668,
+      "lastModified": 1735870107314.489
+    },
+    {
+      "path": "management/issues/issue-manager.test.ts",
+      "size": 1989,
+      "lastModified": 1735900753293.617
+    },
+    {
+      "path": "management/issues/issueManager.test.ts",
+      "size": 3632,
+      "lastModified": 1735900753293.5283
+    },
+    {
+      "path": "management/issues/issues.test.ts",
+      "size": 1882,
+      "lastModified": 1735866626378.9297
+    },
+    {
+      "path": "management/metrics/metrics.test.ts",
+      "size": 2500,
+      "lastModified": 1735866642330.4148
+    },
+    {
+      "path": "monitoring/realtime/buildMonitor.test.ts",
+      "size": 2129,
+      "lastModified": 1735877129062.9338
+    },
+    {
+      "path": "monitoring/realtime/errorInterceptor.test.ts",
+      "size": 2655,
+      "lastModified": 1735900753293.4849
+    },
+    {
+      "path": "monitoring/realtime/impactAnalyzer.test.ts",
+      "size": 3269,
+      "lastModified": 1735900753293.5105
+    },
+    {
+      "path": "monitoring/realtime/networkMonitor.test.ts",
+      "size": 3296,
+      "lastModified": 1735877129062.3813
+    },
+    {
+      "path": "monitoring/realtime/performanceMonitor.test.ts",
+      "size": 1324,
+      "lastModified": 1735900753289.2996
+    }
+  ],
+  "directories": [
+    "core/runner",
+    "core/services",
+    "core/config",
+    "core/workers",
+    "core/state",
+    "tests",
+    "frontend/tests",
+    "management/issues",
+    "management/metrics",
+    "monitoring/realtime"
+  ]
+}

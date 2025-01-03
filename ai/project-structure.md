@@ -1,0 +1,25 @@
+## Project Structure
+/core
+  ports.ts
+  config.ts
+  runner.ts
+  workers.ts
+  state.ts
+/interceptors
+  build.ts
+  runtime.ts
+  network.ts
+  performance.ts
+  structure.ts
+/validation
+  patterns.ts
+  structure.ts
+  limits.ts
+  quality.ts
+/monitoring
+  metrics.ts
+  realtime.ts
+/management
+  files.ts
+  issues.ts
+  history.ts

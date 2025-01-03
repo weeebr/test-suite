@@ -1,0 +1,44 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "rules": {
+    "max-len": ["error", { "code": 150 }],
+    "@typescript-eslint/explicit-function-return-type": ["error", {
+      "allowExpressions": true,
+      "allowTypedFunctionExpressions": true
+    }],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/explicit-member-accessibility": ["error", {
+      "accessibility": "explicit",
+      "overrides": {
+        "constructors": "no-public",
+        "accessors": "explicit",
+        "methods": "explicit",
+        "properties": "explicit",
+        "parameterProperties": "explicit"
+      }
+    }],
+    "@typescript-eslint/no-var-requires": "warn",
+    "prefer-spread": "warn"
+  },
+  "env": {
+    "node": true,
+    "es6": true
+  },
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "node_modules"
+  ]
+} 

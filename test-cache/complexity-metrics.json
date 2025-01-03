@@ -1,0 +1,52 @@
+{
+  "tests/core.test.ts": {
+    "metrics": {
+      "cyclomaticComplexity": 13,
+      "cognitiveComplexity": 323,
+      "lineCount": 122,
+      "functionCount": 1,
+      "branchCount": 12
+    },
+    "timestamp": 1735875251750
+  },
+  "tests/basic.test.ts": {
+    "metrics": {
+      "cyclomaticComplexity": 3,
+      "cognitiveComplexity": 194,
+      "lineCount": 75,
+      "functionCount": 1,
+      "branchCount": 2
+    },
+    "timestamp": 1735875251918
+  },
+  "tests/management.test.ts": {
+    "metrics": {
+      "cyclomaticComplexity": 11,
+      "cognitiveComplexity": 300,
+      "lineCount": 119,
+      "functionCount": 1,
+      "branchCount": 10
+    },
+    "timestamp": 1735875252920
+  },
+  "tests/backend.test.ts": {
+    "metrics": {
+      "cyclomaticComplexity": 8,
+      "cognitiveComplexity": 252,
+      "lineCount": 96,
+      "functionCount": 1,
+      "branchCount": 7
+    },
+    "timestamp": 1735875254083
+  },
+  "tests/frontend.test.ts": {
+    "metrics": {
+      "cyclomaticComplexity": 8,
+      "cognitiveComplexity": 252,
+      "lineCount": 96,
+      "functionCount": 1,
+      "branchCount": 7
+    },
+    "timestamp": 1735875254083
+  }
+}

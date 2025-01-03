@@ -1,0 +1,181 @@
+{
+  "timestamp": 1735904025071,
+  "functions": [
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "core/runner/runner.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 6
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "core/services/portManager.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 5
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "core/config/config.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 4
+    },
+    {
+      "name": "in",
+      "type": "type",
+      "file": "core/config/config.test.ts",
+      "exported": false,
+      "async": false,
+      "line": 52
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "core/workers/workers.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 6
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "core/state/state.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 3
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "tests/backend.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 5
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "tests/basic.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 6
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "tests/core.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 5
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "tests/frontend.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 5
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "tests/management.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 5
+    },
+    {
+      "name": "add",
+      "type": "function",
+      "file": "frontend/tests/example.test.ts",
+      "exported": false,
+      "async": false,
+      "line": 3
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "frontend/tests/example.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 7
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "management/issues/issue-manager.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 6
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "management/issues/issueManager.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 6
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "management/issues/issues.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 4
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "management/metrics/metrics.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 4
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "monitoring/realtime/buildMonitor.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 5
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "monitoring/realtime/errorInterceptor.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 4
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "monitoring/realtime/impactAnalyzer.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 5
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "monitoring/realtime/networkMonitor.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 6
+    },
+    {
+      "name": "runTest",
+      "type": "function",
+      "file": "monitoring/realtime/performanceMonitor.test.ts",
+      "exported": true,
+      "async": true,
+      "line": 7
+    }
+  ]
+}
