@@ -3,14 +3,16 @@ export interface Issue {
   type: 'error' | 'warning' | 'info';
   title: string;
   description: string;
-  status: 'open' | 'in-progress' | 'resolved';
   severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'open' | 'in-progress' | 'resolved' | 'closed';
   source: string;
   timestamp: number;
   lastUpdated: number;
-  assignee?: string;
   resolution?: string;
   relatedIssues?: string[];
+  assignee?: string;
+  tags?: string[];
+  priority?: number;
   impactMetrics?: {
     affectedComponents: string[];
     cascadingEffects: string[];
@@ -20,7 +22,12 @@ export interface Issue {
 }
 
 export interface IssueUpdate {
-  id: string;
-  changes: Partial<Issue>;
-  timestamp: number;
+  title?: string;
+  description?: string;
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  status?: 'open' | 'in-progress' | 'resolved' | 'closed';
+  relatedIssues?: string[];
+  assignee?: string;
+  tags?: string[];
+  priority?: number;
 } 

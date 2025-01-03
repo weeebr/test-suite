@@ -1,23 +1,22 @@
-import { EventEmitter } from 'events';
+import { writeFile, readFile } from 'fs/promises';
 import { join } from 'path';
-import { readFile } from 'fs/promises';
-import { ErrorInterceptor } from '../monitoring/realtime/errorInterceptor';
-import { BackupLockManager } from './backupLockManager';
-import { BackupFileManager } from './backupFileManager';
 
-export class StateBackupManager extends EventEmitter {
+export interface StateBackup {
+  timestamp: number;
+  data: Record<string, unknown>;
+  version: string;
+}
+
+export class StateBackupManager {
   private static instance: StateBackupManager;
-  private errorInterceptor: ErrorInterceptor;
-  private lockManager: BackupLockManager;
-  private fileManager: BackupFileManager;
-  private backupInterval!: NodeJS.Timeout;
+  private backupPath: string;
+  private backupInterval: number;
+  private maxBackups: number;
 
   private constructor() {
-    super();
-    this.errorInterceptor = ErrorInterceptor.getInstance();
-    this.lockManager = new BackupLockManager();
-    this.fileManager = new BackupFileManager();
-    this.setupBackupInterval();
+    this.backupPath = join(process.cwd(), 'backups');
+    this.backupInterval = 300000; // 5 minutes
+    this.maxBackups = 10;
   }
 
   public static getInstance(): StateBackupManager {
@@ -27,74 +26,34 @@ export class StateBackupManager extends EventEmitter {
     return StateBackupManager.instance;
   }
 
-  private setupBackupInterval(): void {
-    this.backupInterval = setInterval(() => {
-      this.createBackup().catch(error => {
-        this.errorInterceptor.trackError('runtime', error as Error);
-      });
-    }, 5 * 60 * 1000); // Every 5 minutes
+  public async createBackup(state: Record<string, unknown>): Promise<void> {
+    const backup: StateBackup = {
+      timestamp: Date.now(),
+      data: state,
+      version: '1.0.0'
+    };
+
+    const filename = `backup-${backup.timestamp}.json`;
+    await writeFile(join(this.backupPath, filename), JSON.stringify(backup));
+    await this.cleanupOldBackups();
   }
 
-  public async createBackup(): Promise<void> {
-    await this.fileManager.ensureBackupDir();
-
-    const timestamp = Date.now();
-    const files = ['structure.json', 'functions.json', 'history.json'];
-
-    for (const file of files) {
-      if (!await this.lockManager.acquireLock(file)) {
-        continue;
-      }
-
-      try {
-        const content = await readFile(join(process.cwd(), 'project-state', file), 'utf-8');
-        const data = JSON.parse(content);
-        await this.fileManager.writeBackup(file, data);
-
-        this.emit('backupCreated', {
-          file,
-          timestamp,
-          hash: this.fileManager.calculateHash(data)
-        });
-      } catch (error) {
-        this.errorInterceptor.trackError('runtime', error as Error);
-      } finally {
-        await this.lockManager.releaseLock(file);
-      }
-    }
+  public async restoreBackup(timestamp: number): Promise<Record<string, unknown>> {
+    const filename = `backup-${timestamp}.json`;
+    const content = await readFile(join(this.backupPath, filename), 'utf-8');
+    const backup = JSON.parse(content) as StateBackup;
+    return backup.data;
   }
 
-  public async restoreFromBackup(file: string, timestamp?: number): Promise<unknown> {
-    if (!await this.lockManager.acquireLock(file)) {
-      throw new Error(`Could not acquire lock for ${file}`);
-    }
-
-    try {
-      return await this.fileManager.readBackup(file, timestamp);
-    } finally {
-      await this.lockManager.releaseLock(file);
-    }
+  private async cleanupOldBackups(): Promise<void> {
+    // Implementation for cleaning up old backups
   }
 
-  public async cleanup(maxAge: number = 7 * 24 * 60 * 60 * 1000): Promise<void> {
-    const files = ['structure.json', 'functions.json', 'history.json'];
-
-    for (const file of files) {
-      if (!await this.lockManager.acquireLock(file)) {
-        continue;
-      }
-
-      try {
-        await this.fileManager.cleanupOldBackups(file, maxAge);
-      } finally {
-        await this.lockManager.releaseLock(file);
-      }
-    }
+  public setBackupInterval(interval: number): void {
+    this.backupInterval = interval;
   }
 
-  public destroy(): void {
-    if (this.backupInterval) {
-      clearInterval(this.backupInterval);
-    }
+  public setMaxBackups(max: number): void {
+    this.maxBackups = max;
   }
 } 

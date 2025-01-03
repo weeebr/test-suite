@@ -1,38 +1,54 @@
-import { StateManager } from '../../project-state/stateManager';
-import { MemoryMetrics, ResourceMetrics } from './types';
+import { TestResult } from '../../core/state';
+import { ResourceMetrics } from './types';
 
 interface TestHistoryEntry {
-  timestamp: number;
   testId: string;
+  startTime: number;
+  endTime: number;
   duration: number;
-  result: 'pass' | 'fail';
-  memoryUsage: number;
-  cpuUsage: number;
+  result: TestResult;
+  memoryUsage: {
+    heapUsed: number;
+    heapTotal: number;
+    external: number;
+    arrayBuffers: number;
+  };
+  cpuUsage: {
+    user: number;
+    system: number;
+  };
 }
 
 export class TestHistory {
-  private stateManager: StateManager;
+  private history: TestHistoryEntry[] = [];
 
-  constructor() {
-    this.stateManager = StateManager.getInstance();
-  }
-
-  public async addTestResult(
+  public addEntry(
     testId: string,
-    timestamp: number,
-    duration: number,
-    timeoutLimit: number,
-    memoryLimit: number,
-    memoryMetrics: MemoryMetrics,
+    startTime: number,
+    endTime: number,
+    result: TestResult,
     resourceMetrics: ResourceMetrics
-  ): Promise<void> {
-    await this.stateManager.addTestHistory({
-      timestamp,
+  ): void {
+    this.history.push({
       testId,
-      duration,
-      result: duration < timeoutLimit && memoryMetrics.heapUsed < memoryLimit ? 'pass' : 'fail',
-      memoryUsage: memoryMetrics.heapUsed,
+      startTime,
+      endTime,
+      duration: endTime - startTime,
+      result,
+      memoryUsage: resourceMetrics.memoryUsage,
       cpuUsage: resourceMetrics.cpuUsage
     });
+  }
+
+  public getHistory(): TestHistoryEntry[] {
+    return this.history;
+  }
+
+  public getTestHistory(testId: string): TestHistoryEntry[] {
+    return this.history.filter(entry => entry.testId === testId);
+  }
+
+  public clear(): void {
+    this.history = [];
   }
 } 

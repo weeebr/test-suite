@@ -1,22 +1,15 @@
 import { EventEmitter } from 'events';
-import { ErrorEvent, ErrorHandler } from './errorTypes';
-import { ErrorInfoExtractor } from './errorInfoExtractor';
-import { GlobalErrorHandlers } from './globalErrorHandlers';
-
-const MAX_ERROR_HISTORY = 1000;
-const ERROR_CLEANUP_INTERVAL = 60000; // 1 minute
+import { ErrorEvent } from './errorTypes';
 
 export class ErrorInterceptor extends EventEmitter {
   private static instance: ErrorInterceptor;
   private errors: ErrorEvent[] = [];
   private _isHandlingError = false;
-  private errorHandlers = new Map<string, ErrorHandler>();
-  private cleanupInterval?: NodeJS.Timeout;
+  private errorHandlers = new Map<ErrorEvent['type'], (error: Error) => void>();
 
   private constructor() {
     super();
-    this.setupGlobalHandlers();
-    this.setupErrorCleanup();
+    this.setupErrorHandlers();
   }
 
   public static getInstance(): ErrorInterceptor {
@@ -26,76 +19,65 @@ export class ErrorInterceptor extends EventEmitter {
     return ErrorInterceptor.instance;
   }
 
-  private setupGlobalHandlers(): void {
-    if (typeof window === 'undefined') {
-      GlobalErrorHandlers.setupNodeHandlers(this);
-    } else {
-      GlobalErrorHandlers.setupBrowserHandlers(this);
-    }
-  }
+  private setupErrorHandlers(): void {
+    process.on('uncaughtException', (error: Error) => {
+      this.trackError('runtime', error);
+    });
 
-  private setupErrorCleanup(): void {
-    this.cleanupInterval = setInterval(() => {
-      if (this.errors.length > MAX_ERROR_HISTORY) {
-        this.errors = this.errors.slice(-MAX_ERROR_HISTORY);
+    process.on('unhandledRejection', (reason: any) => {
+      const error = reason instanceof Error ? reason : new Error(String(reason));
+      this.trackError('runtime', error);
+    });
+
+    process.on('warning', (warning: Error) => {
+      this.trackError('console', warning);
+    });
+
+    process.on('exit', (code: number) => {
+      if (code !== 0) {
+        const error = new Error(`Process exited with code ${code}`);
+        this.trackError('runtime', error);
       }
-    }, ERROR_CLEANUP_INTERVAL);
+    });
   }
 
-  public registerErrorHandler(type: ErrorEvent['type'], handler: ErrorHandler): void {
+  public registerErrorHandler(type: ErrorEvent['type'], handler: (error: Error) => void): void {
     this.errorHandlers.set(type, handler);
   }
 
-  public trackError(type: ErrorEvent['type'], error: Error, additionalContext?: Record<string, unknown>): void {
-    if (this._isHandlingError) {
-      console.error('Nested error occurred while handling another error:', error);
-      return;
-    }
-
+  public trackError(type: ErrorEvent['type'], error: Error, context?: Record<string, any>): void {
     this._isHandlingError = true;
-    try {
-      const context = { ...ErrorInfoExtractor.extractErrorInfo(error), ...additionalContext };
-      const errorEvent: ErrorEvent = {
-        type,
-        error,
-        timestamp: Date.now(),
-        context,
-        stack: error.stack,
-        source: context.source as string,
-        line: context.line as number,
-        column: context.column as number
-      };
 
-      // Add severity based on error type
-      const severity = this.calculateErrorSeverity(type);
-      errorEvent.context = { ...errorEvent.context, severity };
-
-      // Add impact assessment
-      const impact = this.assessErrorImpact(type);
-      errorEvent.context = { ...errorEvent.context, impact };
-
-      this.errors.push(errorEvent);
-
-      const handler = this.errorHandlers.get(type);
-      if (handler) {
-        try {
-          handler(error);
-        } catch (handlerError) {
-          console.error('Error in error handler:', handlerError);
-          // Don't rethrow to prevent cascading errors
-        }
-      } else {
-        this.handleUnregisteredError(type, error, errorEvent);
-      }
-
-      try {
-        this.emit('error', errorEvent);
-      } catch (emitError) {
-        console.error('Error while emitting error event:', emitError);
-      }
-    } finally {
-      this._isHandlingError = false;
+    const handler = this.errorHandlers.get(type);
+    if (handler) {
+      handler(error);
     }
+
+    const severity = this.calculateErrorSeverity(type);
+    const impact = this.assessErrorImpact(type);
+
+    const errorEvent: ErrorEvent = {
+      type,
+      error,
+      timestamp: Date.now(),
+      context: {
+        ...context,
+        stack: error.stack,
+        source: error.stack?.split('\n')[1]?.match(/\((.*?):(\d+):(\d+)\)/)?.[1] || 'unknown',
+        line: parseInt(error.stack?.split('\n')[1]?.match(/\((.*?):(\d+):(\d+)\)/)?.[2] || '0'),
+        column: parseInt(error.stack?.split('\n')[1]?.match(/\((.*?):(\d+):(\d+)\)/)?.[3] || '0'),
+        severity,
+        impact
+      },
+      stack: error.stack,
+      source: error.stack?.split('\n')[1]?.match(/\((.*?):(\d+):(\d+)\)/)?.[1] || 'unknown',
+      line: parseInt(error.stack?.split('\n')[1]?.match(/\((.*?):(\d+):(\d+)\)/)?.[2] || '0'),
+      column: parseInt(error.stack?.split('\n')[1]?.match(/\((.*?):(\d+):(\d+)\)/)?.[3] || '0')
+    };
+
+    this.errors.push(errorEvent);
+    this.emit('error', errorEvent);
+    this._isHandlingError = false;
   }
 
   private calculateErrorSeverity(type: ErrorEvent['type']): 'critical' | 'high' | 'medium' | 'low' {
@@ -105,7 +87,9 @@ export class ErrorInterceptor extends EventEmitter {
         return 'critical';
       case 'network':
       case 'module':
+      case 'typescript':
         return 'high';
+      case 'console':
       case 'lint':
         return 'medium';
       default:
@@ -123,23 +107,15 @@ export class ErrorInterceptor extends EventEmitter {
         return 'Network communication disrupted';
       case 'module':
         return 'Module functionality unavailable';
+      case 'typescript':
+        return 'Type checking failed';
+      case 'console':
+        return 'Console error detected';
       case 'lint':
         return 'Code quality issues detected';
       default:
         return 'Unknown impact';
     }
-  }
-
-  private handleUnregisteredError(type: ErrorEvent['type'], error: Error, errorEvent: ErrorEvent): void {
-    const errorMessage = `${type.toUpperCase()} Error: ${error.message}`;
-    const locationInfo = errorEvent.source 
-      ? `\nLocation: ${errorEvent.source}:${errorEvent.line}:${errorEvent.column}`
-      : '';
-    const stackTrace = error.stack 
-      ? `\nStack Trace:\n${error.stack}`
-      : '';
-
-    console.error(`${errorMessage}${locationInfo}${stackTrace}`);
   }
 
   public isHandlingError(): boolean {
@@ -164,13 +140,5 @@ export class ErrorInterceptor extends EventEmitter {
 
   public getErrorsBySeverity(severity: string): ErrorEvent[] {
     return this.errors.filter(e => e.context?.severity === severity);
-  }
-
-  public destroy(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-    }
-    this.removeAllListeners();
-    this.clearErrors();
   }
 } 

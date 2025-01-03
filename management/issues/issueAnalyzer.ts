@@ -1,4 +1,4 @@
-import { Issue } from './issue-types';
+import { Issue } from './issueTypes';
 
 export class IssueAnalyzer {
   public getRelatedIssues(id: string, issues: Map<string, Issue>): Issue[] {

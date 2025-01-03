@@ -47,13 +47,46 @@ export interface NetworkEvent extends BaseEvent {
 }
 
 // Performance types
-export interface PerformanceEvent extends BaseEvent {
-  type: 'memory' | 'cpu' | 'io' | 'timing';
+export interface MemoryMetrics {
+  heapUsed: number;
+  heapTotal: number;
+  external: number;
+  arrayBuffers: number;
+}
+
+export interface ResourceMetrics {
+  cpuUsage: {
+    user: number;
+    system: number;
+  };
+  memoryUsage: MemoryMetrics;
+}
+
+export interface TestBaseline {
+  startTime: number;
+  memoryBaseline: MemoryMetrics;
+  cpuBaseline: {
+    user: number;
+    system: number;
+  };
+}
+
+export interface PerformanceEvent {
+  type: 'memory' | 'cpu' | 'io' | 'timing' | 'resource';
+  timestamp: number;
+  testId?: string;
   metrics: {
     value: number;
     unit: string;
     limit?: number;
+    heapUsed?: number;
+    heapTotal?: number;
+    external?: number;
+    arrayBuffers?: number;
+    cpuUsage?: number;
+    startTime?: number;
   };
+  context?: Record<string, unknown>;
 }
 
 // Resource types

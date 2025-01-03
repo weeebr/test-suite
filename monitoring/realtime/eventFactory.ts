@@ -1,65 +1,40 @@
-import { freemem, totalmem } from 'os';
-import { ResourceMonitor } from './resourceMonitor';
-import { PerformanceEvent, TestBaseline } from './types';
+import { PerformanceEvent, TestBaseline, MemoryMetrics, ResourceMetrics } from './types';
 
-export class EventFactory {
-  public static createMemoryEvent(
-    testId: string,
-    timestamp: number,
-    currentMemory: NodeJS.MemoryUsage,
-    baseline: TestBaseline
-  ): PerformanceEvent {
-    return {
-      type: 'memory',
-      testId,
-      timestamp,
-      metrics: {
-        heapUsed: currentMemory.heapUsed - baseline.memoryBaseline.heapUsed,
-        heapTotal: currentMemory.heapTotal - baseline.memoryBaseline.heapTotal,
-        external: currentMemory.external - baseline.memoryBaseline.external,
-        systemTotal: totalmem(),
-        systemFree: freemem(),
-        processUsage: process.memoryUsage().heapUsed
-      }
-    };
-  }
+export function createMemoryEvent(currentMemory: MemoryMetrics, baseline: TestBaseline): PerformanceEvent {
+  return {
+    type: 'memory',
+    timestamp: Date.now(),
+    metrics: {
+      value: currentMemory.heapUsed,
+      unit: 'bytes',
+      heapUsed: currentMemory.heapUsed - baseline.memoryBaseline.heapUsed,
+      heapTotal: currentMemory.heapTotal,
+      external: currentMemory.external,
+      arrayBuffers: currentMemory.arrayBuffers
+    }
+  };
+}
 
-  public static createTimingEvent(
-    testId: string,
-    timestamp: number,
-    duration: number,
-    timeoutLimit: number,
-    baseline: TestBaseline
-  ): PerformanceEvent {
-    return {
-      type: 'timing',
-      testId,
-      timestamp,
-      metrics: {
-        startTime: baseline.startTime,
-        duration,
-        timeoutThreshold: timeoutLimit,
-        isTimeout: duration >= timeoutLimit
-      }
-    };
-  }
+export function createTimingEvent(duration: number, baseline: TestBaseline): PerformanceEvent {
+  return {
+    type: 'timing',
+    timestamp: Date.now(),
+    metrics: {
+      value: duration,
+      unit: 'ms',
+      startTime: baseline.startTime
+    }
+  };
+}
 
-  public static createResourceEvent(
-    testId: string,
-    timestamp: number,
-    baseline: TestBaseline
-  ): PerformanceEvent {
-    const currentCPU = process.cpuUsage(baseline.cpuBaseline);
-    return {
-      type: 'resource',
-      testId,
-      timestamp,
-      metrics: {
-        cpuUsage: (currentCPU.user + currentCPU.system) / 1000000,
-        cpuLoad: ResourceMonitor.getCPULoad(),
-        ioOperations: ResourceMonitor.getIOOperations() - baseline.ioBaseline,
-        networkBandwidth: ResourceMonitor.getNetworkBandwidth() - baseline.networkBaseline
-      }
-    };
-  }
+export function createResourceEvent(currentCPU: ResourceMetrics['cpuUsage']): PerformanceEvent {
+  return {
+    type: 'resource',
+    timestamp: Date.now(),
+    metrics: {
+      value: (currentCPU.user + currentCPU.system) / 1000000,
+      unit: 'ms',
+      cpuUsage: (currentCPU.user + currentCPU.system) / 1000000
+    }
+  };
 } 

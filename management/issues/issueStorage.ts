@@ -1,6 +1,6 @@
 import { writeFile, readFile } from 'fs/promises';
 import { join } from 'path';
-import { Issue, IssueUpdate } from './issue-types';
+import { Issue, IssueUpdate } from './issueTypes';
 
 export class IssueStorage {
   private issuesPath: string;

@@ -1,50 +1,34 @@
-export type TestResultType = 'type' | 'structure' | 'runtime';
-export type TestResultSeverity = 'info' | 'warning' | 'error';
+export type TestSeverity = 'info' | 'warning' | 'error';
+export type TestType = 'runtime' | 'module' | 'syntax';
 
 export interface TestResult {
   file: string;
-  type: TestResultType;
-  severity: TestResultSeverity;
+  type: TestType;
+  severity: TestSeverity;
   message: string;
+  code?: string;
+  stack?: string;
   line?: number;
   column?: number;
-  code?: string;
+  duration?: number;
+  group?: string;
 }
 
-export interface TestSummary {
-  totalFiles: number;
-  passedFiles: number;
-  failedFiles: number;
-  duration: number;
+export interface TestGroup {
+  name: string;
+  pattern: string;
+  setup?: () => Promise<void>;
+  teardown?: () => Promise<void>;
+  parallel?: boolean;
+  timeout?: number;
+  maxParallel?: number;
 }
 
-export interface ProjectStructure {
-  timestamp: number;
-  files: Array<{
-    path: string;
-    size: number;
-    lastModified: number;
-  }>;
-  directories: string[];
-}
-
-export interface FunctionRegistry {
-  timestamp: number;
-  functions: Array<{
-    name: string;
-    type: 'function' | 'type' | 'interface' | 'class';
-    file: string;
-    exported: boolean;
-    async: boolean;
-    line: number;
-  }>;
-}
-
-export interface IssueState {
-  error: string;
-  file: string;
-  created: Date;
-  completed: Date;
-  category: string;
-  context: string;
+export interface TestState {
+  groups: Map<string, TestGroup>;
+  results: Map<string, TestResult[]>;
+  running: Set<string>;
+  completed: Set<string>;
+  startTime: number;
+  endTime?: number;
 } 

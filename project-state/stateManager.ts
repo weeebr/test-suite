@@ -61,12 +61,13 @@ export class StateManager extends EventEmitter {
       this.currentState = {
         structure,
         functions,
-        history: history || []
+        history: Array.isArray(history) ? history : []
       };
     } catch (error) {
       this.errorInterceptor.trackError('runtime', error as Error, {
         context: 'StateManager.initializeState'
       });
+      this.currentState.history = this.currentState.history || [];
     }
   }
 

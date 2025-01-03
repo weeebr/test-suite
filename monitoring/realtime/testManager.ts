@@ -39,10 +39,13 @@ export class TestManager {
 
     const baseline: TestBaseline = {
       startTime: Date.now(),
-      memoryBaseline: process.memoryUsage(),
-      cpuBaseline: process.cpuUsage(),
-      ioBaseline: ResourceMonitor.getIOOperations(),
-      networkBaseline: ResourceMonitor.getNetworkBandwidth()
+      memoryBaseline: {
+        heapUsed: process.memoryUsage().heapUsed,
+        heapTotal: process.memoryUsage().heapTotal,
+        external: process.memoryUsage().external,
+        arrayBuffers: process.memoryUsage().arrayBuffers || 0
+      },
+      cpuBaseline: process.cpuUsage()
     };
 
     this.activeTests.set(testId, baseline);

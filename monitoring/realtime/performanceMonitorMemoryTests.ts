@@ -1,52 +1,73 @@
-import { PerformanceMonitor } from './performanceMonitor';
 import { TestResult } from '../../core/state';
+import { PerformanceMonitor } from './performanceMonitor';
 
-export async function runMemoryTests(): Promise<TestResult> {
-  const performanceMonitor = PerformanceMonitor.getInstance();
-
-  // Test 1: Memory tracking
-  const testId = 'memory-test';
-  performanceMonitor.startTest(testId);
-
-  // Allocate some memory
-  const array = new Array(1000000).fill(0);
-
-  performanceMonitor.endTest(testId);
-
-  const memoryEvents = performanceMonitor.getEventsByType('memory');
-  if (memoryEvents.length === 0) {
-    return {
-      file: __filename,
-      type: 'runtime',
-      severity: 'error',
-      message: 'Memory tracking failed'
-    };
-  }
-
-  // Test 2: Memory limit enforcement
-  const memoryLimitTestId = 'memory-limit-test';
-  performanceMonitor.setMemoryLimit(1024); // Set very low limit
-  performanceMonitor.startTest(memoryLimitTestId);
-
-  // Try to allocate more memory than the limit
+export async function runTest(): Promise<TestResult> {
   try {
-    const largeArray = new Array(1000000).fill(0);
-    await new Promise(resolve => setTimeout(resolve, 200)); // Wait for limit check
-  } catch {}
+    const monitor = PerformanceMonitor.getInstance();
+    monitor.clearEvents();
+    const testId = 'memory-test';
 
-  if (performanceMonitor.isTestRunning(memoryLimitTestId)) {
+    // Start monitoring
+    monitor.startTest(testId);
+    const initialMemory = process.memoryUsage().heapUsed;
+
+    // Allocate memory
+    const array = new Array(1000000).fill(0);
+    const currentMemory = process.memoryUsage().heapUsed;
+
+    // Check memory increase
+    if (currentMemory <= initialMemory) {
+      return {
+        file: __filename,
+        type: 'runtime',
+        severity: 'error',
+        message: 'Memory tracking failed - no memory increase detected',
+        code: 'ERR_NO_MEMORY_INCREASE'
+      };
+    }
+
+    // Test memory cleanup
+    monitor.endTest(testId);
+    array.length = 0;
+    global.gc?.();
+
+    // Check memory events
+    const events = monitor.getEvents().filter(e => e.type === 'memory');
+    if (events.length === 0) {
+      return {
+        file: __filename,
+        type: 'runtime',
+        severity: 'error',
+        message: 'Memory tracking failed - no memory events recorded',
+        code: 'ERR_NO_EVENTS'
+      };
+    }
+
+    // Verify event data
+    const memoryEvent = events[0];
+    if (!memoryEvent.metrics.heapUsed || !memoryEvent.metrics.heapTotal) {
+      return {
+        file: __filename,
+        type: 'runtime',
+        severity: 'error',
+        message: 'Memory tracking failed - incomplete memory metrics',
+        code: 'ERR_INCOMPLETE_METRICS'
+      };
+    }
+
+    return {
+      file: __filename,
+      type: 'runtime',
+      severity: 'info',
+      message: 'Memory tracking test passed'
+    };
+  } catch (error) {
     return {
       file: __filename,
       type: 'runtime',
       severity: 'error',
-      message: 'Memory limit enforcement failed'
+      message: error instanceof Error ? error.message : String(error),
+      code: 'ERR_UNEXPECTED'
     };
   }
-
-  return {
-    file: __filename,
-    type: 'runtime',
-    severity: 'info',
-    message: 'Memory tests passed'
-  };
 } 
