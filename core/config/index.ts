@@ -9,6 +9,15 @@ export interface TestPatterns {
   backend?: RegExp;
 }
 
+export type ProjectType = 'react' | 'node' | 'typescript' | 'javascript' | 'unknown';
+
+export interface ProjectDetectionResult {
+  type: ProjectType;
+  hasTypeScript: boolean;
+  testDirs: string[];
+  srcDirs: string[];
+}
+
 export interface Config {
   // Project structure
   rootDir: string;
@@ -37,12 +46,24 @@ export interface Config {
   verbose?: boolean;
   outputFormat?: 'default' | 'json' | 'junit';
   outputFile?: string;
+  
+  // Project detection
+  projectType?: ProjectType;
+  autoDetect?: boolean;
+  
+  // Integration options
+  integrationMode?: {
+    enabled: boolean;
+    watchMode: boolean;
+    customPatterns?: TestPatterns;
+    customDirs?: string[];
+  };
 }
 
 export const defaultConfig: Config = {
   // Project structure
   rootDir: process.cwd(),
-  targetDirs: ['tests', 'src/**/__tests__', '**/*.test.*'],
+  targetDirs: ['tests', 'src/**/__tests__', '**/*.test.*', '**/*.spec.*'],
   exclude: ['node_modules', 'dist', 'coverage', 'build'],
   
   // Test patterns
@@ -72,5 +93,15 @@ export const defaultConfig: Config = {
   // Output options
   silent: false,
   verbose: false,
-  outputFormat: 'default'
+  outputFormat: 'default',
+  
+  // Project detection
+  projectType: 'unknown',
+  autoDetect: true,
+  
+  // Integration defaults
+  integrationMode: {
+    enabled: false,
+    watchMode: false
+  },
 }; 

@@ -5,7 +5,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "bin": {
-        "cursor-test": "./bin/run.js"
+        "test-suite": "./bin/run.js"
     },
     "scripts": {
         "build": "tsc",
@@ -22,8 +22,8 @@
         "rename": "ts-node bin/renameFiles.ts",
         "clean": "rimraf dist coverage",
         "prepare": "yarn clean && yarn build",
-        "prepack": "yarn build",
-        "postinstall": "yarn build"
+        "test:auto": "ts-node bin/run.ts --auto",
+        "test:auto:watch": "ts-node bin/run.ts --auto --watch"
     },
     "keywords": [
         "test",
@@ -31,7 +31,9 @@
         "test-runner",
         "typescript",
         "javascript",
-        "cursor"
+        "cursor",
+        "integration",
+        "auto-detect"
     ],
     "author": "Cursor",
     "license": "MIT",

@@ -145,3 +145,125 @@ monitor.on('buildEvent', (event) => {
 ## License
 
 MIT 
+
+## Integration with External Projects
+
+### Quick Start
+
+```bash
+# Install the package
+npm install @cursor/test-suite
+
+# Run tests with auto-detection
+npx cursor-test --integration
+
+# Watch mode
+npx cursor-test --integration --watch
+```
+
+### Project Auto-Detection
+
+The test suite automatically detects your project type and configures itself accordingly:
+
+- React projects: Detects React and sets up for component testing
+- Node.js projects: Configures for backend testing
+- TypeScript projects: Uses your tsconfig.json
+- JavaScript projects: Works out of the box
+
+### Configuration
+
+Create a `cursor-test.config.js` in your project root (optional):
+
+```typescript
+module.exports = {
+  // Override auto-detected settings
+  testPattern: /\.spec\.(ts|js)$/,
+  targetDirs: ['tests'],
+  
+  // Performance settings
+  parallelization: {
+    enabled: true,
+    maxWorkers: 4,
+    testTimeout: 5000
+  },
+  
+  // Output settings
+  outputFormat: 'junit',
+  outputFile: 'test-results.xml'
+};
+```
+
+### Supported Test Types
+
+- Unit tests: `*.test.ts`, `*.spec.ts`
+- Integration tests: `*.integration.test.ts`
+- E2E tests: `*.e2e.test.ts`
+- Frontend tests: `*.frontend.test.ts`
+- Backend tests: `*.backend.test.ts` 
+
+## Usage
+
+### As a Package Dependency
+
+1. Install the package:
+```bash
+yarn add @cursor/test-suite
+```
+
+2. Add scripts to your package.json:
+```json
+{
+  "scripts": {
+    "test": "test-suite test",
+    "test:watch": "test-suite test --watch",
+    "test:auto": "test-suite test --auto",
+    "test:auto:watch": "test-suite test --auto --watch"
+  }
+}
+```
+
+### Using npx (without installation)
+
+```bash
+# Run with auto-detection
+npx @cursor/test-suite test --auto
+
+# Watch mode
+npx @cursor/test-suite test --auto --watch
+```
+
+### Auto-Detection
+
+The `--auto` flag enables automatic detection of:
+- Project type (React/Node.js/TypeScript/JavaScript)
+- Test directories
+- File patterns
+- TypeScript configuration
+
+The test suite will configure itself based on your project structure:
+- React projects: Sets up for component testing
+- Node.js projects: Configures for backend testing
+- TypeScript projects: Uses your tsconfig.json
+- JavaScript projects: Works out of the box
+
+### Configuration
+
+Create a `test-suite.config.js` in your project root (optional):
+
+```typescript
+module.exports = {
+  // Override auto-detected settings
+  testPattern: /\.spec\.(ts|js)$/,
+  targetDirs: ['tests'],
+  
+  // Performance settings
+  parallelization: {
+    enabled: true,
+    maxWorkers: 4,
+    testTimeout: 5000
+  },
+  
+  // Output settings
+  outputFormat: 'junit',
+  outputFile: 'test-results.xml'
+}; 

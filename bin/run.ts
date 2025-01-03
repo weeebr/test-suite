@@ -1,5 +1,6 @@
 import { TestRunner } from '../core/runner';
 import { defaultConfig } from '../core/config';
+import { detectProject } from '../core/config/projectDetector';
 import { register } from 'ts-node';
 import { join } from 'path';
 
@@ -16,11 +17,39 @@ async function main() {
   const isFrontend = args.includes('--frontend');
   const isBackend = args.includes('--backend');
   const isWatch = args.includes('--watch');
+  const isAuto = args.includes('--auto');
 
   let testType: 'frontend' | 'backend' | 'self' | 'all' = 'all';
   if (isSelf) testType = 'self';
   else if (isFrontend) testType = 'frontend';
   else if (isBackend) testType = 'backend';
+
+  const rootDir = process.cwd();
+  let config = { ...defaultConfig };
+
+  // Auto-detect project type when --auto flag is used
+  if (isAuto) {
+    const projectInfo = await detectProject(rootDir);
+    config = {
+      ...config,
+      projectType: projectInfo.type,
+      targetDirs: projectInfo.testDirs,
+      autoDetect: true,
+      integrationMode: {
+        enabled: true,
+        watchMode: isWatch,
+        customDirs: projectInfo.srcDirs
+      }
+    };
+
+    if (projectInfo.hasTypeScript) {
+      register({
+        transpileOnly: true,
+        project: join(rootDir, 'tsconfig.json'),
+        require: ['tsconfig-paths/register']
+      });
+    }
+  }
 
   // Determine test directories based on type
   const testDirs = ['tests/core', 'tests/management', 'tests/monitoring', 'tests/integration'];
@@ -51,10 +80,8 @@ async function main() {
 
   try {
     const runner = new TestRunner({
-      ...defaultConfig,
-      rootDir: process.cwd(),
-      targetDirs: testDirs,
-      testPattern: /\.test\.ts$/,
+      ...config,
+      rootDir,
       watchMode: isWatch,
       testType,
       parallelization: {
