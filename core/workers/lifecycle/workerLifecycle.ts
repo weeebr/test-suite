@@ -38,9 +38,13 @@ export class WorkerLifecycle {
       if (worker.pid) {
         this.onMetricsUpdate({
           pid: worker.pid,
-          memory: 0,
+          memory: process.memoryUsage().heapUsed,
+          memoryUsage: process.memoryUsage().heapUsed,
+          cpuUsage: 0,
           startTime: Date.now(),
-          status: 'completed'
+          lastActivity: Date.now(),
+          status: 'completed',
+          file: 'unknown'
         });
       }
       this.cleanupHandlers.delete(cleanup);

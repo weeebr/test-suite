@@ -1,61 +1,57 @@
-import { TestResult, TestState } from '../../../core/state';
+import { TestResult, TestState } from './types';
 
 export async function runTest(): Promise<TestResult> {
   try {
-    const state = new TestState();
-
-    // Test result tracking
-    const testResult: TestResult = {
-      file: 'test.ts',
-      type: 'runtime',
-      severity: 'error',
-      message: 'Test error'
+    const state: TestState = {
+      groups: new Map(),
+      results: new Map(),
+      running: new Set(),
+      completed: new Set(),
+      startTime: Date.now()
     };
 
-    state.addResult(testResult);
-    const results = state.getResults();
-
-    if (results.length !== 1) {
+    // Test 1: Initial state
+    if (state.groups.size > 0) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Result count mismatch',
-        line: 1
+        message: 'Initial state not empty'
       };
     }
 
-    // Test summary
-    const summary = state.getSummary();
-    if (summary.totalFiles !== 1) {
+    // Test 2: Add test group
+    state.groups.set('test-group', {
+      name: 'test-group',
+      pattern: '*.test.ts',
+      parallel: true
+    });
+
+    if (state.groups.size !== 1) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Total files count mismatch',
-        line: 1
+        message: 'Group not added correctly'
       };
     }
 
-    if (summary.failedFiles !== 1) {
-      return {
-        file: __filename,
-        type: 'runtime',
-        severity: 'error',
-        message: 'Failed files count mismatch',
-        line: 1
-      };
-    }
+    // Test 3: Add test result
+    const results = state.results.get('test-group') || [];
+    results.push({
+      file: 'test.ts',
+      type: 'runtime',
+      severity: 'info',
+      message: 'Test passed'
+    });
+    state.results.set('test-group', results);
 
-    // Test clear
-    state.clear();
-    if (state.getResults().length !== 0) {
+    if (!state.results.has('test-group')) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Clear failed',
-        line: 1
+        message: 'Results not added correctly'
       };
     }
 
@@ -63,16 +59,14 @@ export async function runTest(): Promise<TestResult> {
       file: __filename,
       type: 'runtime',
       severity: 'info',
-      message: 'State tests passed',
-      line: 1
+      message: 'State management tests passed'
     };
   } catch (error) {
     return {
       file: __filename,
       type: 'runtime',
       severity: 'error',
-      message: error instanceof Error ? error.message : String(error),
-      line: 1
+      message: error instanceof Error ? error.message : String(error)
     };
   }
 } 

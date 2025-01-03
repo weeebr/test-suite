@@ -1,5 +1,5 @@
 import { TestResult } from '../../core/state';
-import { runMemoryTests } from './performanceMonitorMemoryTests';
+import { runMemoryTests } from './performanceMonitor.memoryTests';
 import { runTimingTests } from './performanceMonitorTimingTests';
 import { runResourceTests } from './performanceMonitorResourceTests';
 import { runEventTests } from './performanceMonitorEventTests';

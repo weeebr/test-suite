@@ -1,6 +1,5 @@
 import { BuildMonitor } from './buildMonitor';
 import { TestResult } from '../../core/state';
-import { join } from 'path';
 
 export async function runTest(): Promise<TestResult> {
   try {

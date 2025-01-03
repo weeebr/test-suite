@@ -19,9 +19,13 @@ export class WorkerEventHandler {
     if (worker.pid) {
       this.onMetricsUpdate({
         pid: worker.pid,
-        memory: 0,
+        memory: process.memoryUsage().heapUsed,
+        memoryUsage: process.memoryUsage().heapUsed,
+        cpuUsage: 0,
         startTime: Date.now(),
-        status: 'failed'
+        lastActivity: Date.now(),
+        status: 'failed',
+        file: 'unknown'
       });
 
       this.errorInterceptor.trackError('process', error, {
@@ -38,9 +42,13 @@ export class WorkerEventHandler {
     if (worker.pid) {
       this.onMetricsUpdate({
         pid: worker.pid,
-        memory: 0,
+        memory: process.memoryUsage().heapUsed,
+        memoryUsage: process.memoryUsage().heapUsed,
+        cpuUsage: 0,
         startTime: Date.now(),
-        status: 'failed'
+        lastActivity: Date.now(),
+        status: 'failed',
+        file: 'unknown'
       });
 
       this.errorInterceptor.trackError('process', new Error('Worker timed out'), {

@@ -1,5 +1,5 @@
 export type TestSeverity = 'info' | 'warning' | 'error';
-export type TestType = 'runtime' | 'module' | 'syntax';
+export type TestType = 'runtime' | 'module' | 'syntax' | 'structure';
 
 export interface TestResult {
   file: string;
@@ -31,6 +31,50 @@ export interface TestState {
   completed: Set<string>;
   startTime: number;
   endTime?: number;
+}
+
+export interface TestSummary {
+  total: number;
+  passed: number;
+  failed: number;
+  skipped: number;
+  duration: number;
+  groups: Record<string, {
+    total: number;
+    passed: number;
+    failed: number;
+    skipped: number;
+  }>;
+}
+
+export interface ProjectStructure {
+  directories: {
+    tests: string[];
+    src: string[];
+    config: string[];
+  };
+  files: {
+    tests: string[];
+    source: string[];
+    config: string[];
+  };
+}
+
+export interface FunctionRegistry {
+  functions: Map<string, {
+    name: string;
+    file: string;
+    line: number;
+    column: number;
+    type: string;
+  }>;
+  types: Map<string, {
+    name: string;
+    file: string;
+    line: number;
+    column: number;
+    kind: string;
+  }>;
 }
 
 export type ErrorCategory = 

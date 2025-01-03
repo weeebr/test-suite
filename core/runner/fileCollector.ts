@@ -18,7 +18,7 @@ export class FileCollector {
     private issueManager: TestIssueManager
   ) {
     this.directoryTypeManager = new DirectoryTypeManager(config.structure);
-    this.fileValidator = new FileValidator(config, config.structure);
+    this.fileValidator = new FileValidator(config);
   }
 
   public async collectFiles(): Promise<string[]> {
@@ -68,7 +68,7 @@ export class FileCollector {
           if (!this.directoryTypeManager.shouldSkipDirectory(entry.name, exclude)) {
             subDirPromises.push(this.walkDir(fullPath, files));
           }
-        } else if (this.fileValidator.isValidFile(entry.name, relativePath)) {
+        } else if (this.fileValidator.isValidFile(relativePath)) {
           this.foundFiles++;
           files.push(relativePath);
         }

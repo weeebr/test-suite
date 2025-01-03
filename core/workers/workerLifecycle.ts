@@ -29,8 +29,12 @@ export class WorkerLifecycle {
         this.onMetricsUpdate({
           pid: worker.pid,
           memory: 0,
+          memoryUsage: 0,
+          cpuUsage: 0,
           startTime: Date.now(),
-          status: 'completed'
+          lastActivity: Date.now(),
+          status: 'completed',
+          file: 'unknown'
         });
       }
       this.cleanupHandlers.delete(cleanup);
@@ -56,8 +60,12 @@ export class WorkerLifecycle {
           this.onMetricsUpdate({
             pid: worker.pid,
             memory: 0,
+            memoryUsage: 0,
+            cpuUsage: 0,
             startTime: Date.now(),
-            status: 'failed'
+            lastActivity: Date.now(),
+            status: 'failed',
+            file: file || 'unknown'
           });
 
           this.errorInterceptor.trackError('process', error, {
@@ -85,8 +93,12 @@ export class WorkerLifecycle {
           this.onMetricsUpdate({
             pid: worker.pid,
             memory: 0,
+            memoryUsage: 0,
+            cpuUsage: 0,
             startTime: Date.now(),
-            status: 'failed'
+            lastActivity: Date.now(),
+            status: 'failed',
+            file: file || 'unknown'
           });
 
           this.errorInterceptor.trackError('process', new Error('Worker timed out'), {

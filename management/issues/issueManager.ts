@@ -76,30 +76,43 @@ export class IssueManager extends EventEmitter {
     return id;
   }
 
-  public updateIssue(id: string, changes: Partial<Issue>): void {
-    const issue = this.issues.get(id);
-    if (!issue) {
-      throw new Error('Issue not found');
+  public async updateIssue(id: string, update: Partial<Issue>): Promise<void> {
+    try {
+      const issue = this.issues.get(id);
+      if (!issue) {
+        throw new Error(`Issue not found: ${id}`);
+      }
+
+      const updatedIssue = {
+        ...issue,
+        ...update,
+        lastUpdated: Date.now()
+      };
+
+      this.issues.set(id, updatedIssue);
+      this.emit('issueUpdated', updatedIssue);
+      await this.saveState();
+    } catch (error) {
+      this.errorInterceptor.trackError('runtime', error as Error, {
+        severity: 'error',
+        phase: 'issue_update',
+        details: { id, update }
+      });
+      throw error;
     }
+  }
 
-    const updatedIssue: Issue = {
-      ...issue,
-      ...changes,
-      id,
-      lastUpdated: Date.now()
-    };
-
-    this.issues.set(id, updatedIssue);
-
-    const update: IssueUpdate = {
-      id,
-      changes,
-      timestamp: Date.now()
-    };
-
-    this.updates.push(update);
-    this.emit('issueUpdated', updatedIssue);
-    this.storage.saveState(this.issues, this.updates);
+  private async saveState(): Promise<void> {
+    try {
+      await this.storage.saveState(this.issues, this.updates);
+    } catch (error) {
+      this.errorInterceptor.trackError('runtime', error as Error, {
+        severity: 'error',
+        phase: 'issue_save',
+        details: { issueCount: this.issues.size }
+      });
+      throw error;
+    }
   }
 
   public getIssue(id: string): Issue | undefined {

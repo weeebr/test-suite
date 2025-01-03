@@ -18,6 +18,49 @@ export interface ProjectDetectionResult {
   srcDirs: string[];
 }
 
+export interface ProjectStructureConfig {
+  directories: {
+    tests: string[];
+    src: string[];
+    config: string[];
+    core: string[];
+    management: string[];
+    monitoring: string[];
+  };
+  files: {
+    tests: string[];
+    source: string[];
+    config: string[];
+  };
+  exclude?: string[];
+}
+
+export interface TestSuiteConfig {
+  rootDir: string;
+  targetDirs: string[];
+  exclude: string[];
+  testPattern: RegExp | TestPatterns;
+  testFileExtensions: string[];
+  testType: TestType;
+  structure?: ProjectStructureConfig;
+}
+
+export interface PortConfig {
+  port: number;
+  reservedPorts: number[];
+  minPort: number;
+  maxPort: number;
+  basePort: number;
+  services: {
+    [key: string]: {
+      port: number;
+      host: string;
+      protocol: string;
+      priority: number;
+    };
+  };
+}
+
 export interface Config {
   // Project structure
   rootDir: string;

@@ -3,8 +3,12 @@ export type WorkerStatus = 'starting' | 'running' | 'completed' | 'failed';
 export interface WorkerMetrics {
   pid: number;
   memory: number;
+  memoryUsage: number;
+  cpuUsage: number;
   startTime: number;
+  lastActivity: number;
   status: WorkerStatus;
+  file: string;
 }
 
 export class WorkerMetricsManager {
@@ -12,6 +16,10 @@ export class WorkerMetricsManager {
 
   updateMetrics(pid: number, metrics: WorkerMetrics): void {
     this.metrics.set(pid, metrics);
+  }
+
+  getMetrics(pid: number): WorkerMetrics | undefined {
+    return this.metrics.get(pid);
   }
 
   clear(): void {

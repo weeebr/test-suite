@@ -1,76 +1,75 @@
 import { join } from 'path';
 import { stat, readFile } from 'fs/promises';
+import { TestStateManager } from '../state';
 import { TestSuiteConfig } from '../config';
-import { ProjectStateManager, FunctionRegistry } from '../state';
-import { TestIssueManager } from '../../management/issues';
+import { FileCollector } from './fileCollector';
+import { FileValidator } from './fileValidator';
 import { FunctionExtractor } from './functionExtractor';
+import { TestIssueManager } from '../../management/issues';
 
 export class StructureManager {
-  private config: TestSuiteConfig;
-  private issueManager: TestIssueManager;
-  private projectState: ProjectStateManager;
+  private fileCollector: FileCollector;
+  private fileValidator: FileValidator;
 
-  constructor(config: TestSuiteConfig, issueManager: TestIssueManager) {
-    this.config = config;
-    this.issueManager = issueManager;
-    this.projectState = ProjectStateManager.getInstance(config.rootDir);
+  constructor(
+    private config: TestSuiteConfig,
+    private stateManager: TestStateManager,
+    private issueManager: TestIssueManager
+  ) {
+    this.fileValidator = new FileValidator(config);
+    this.fileCollector = new FileCollector(config, issueManager);
   }
 
-  public async updateStructure(files: string[]): Promise<void> {
-    const structure = {
-      timestamp: Date.now(),
-      files: await Promise.all(files.map(async file => {
-        try {
-          const fullPath = join(this.config.rootDir, file);
-          const stats = await stat(fullPath);
-          return {
-            path: file,
-            size: stats.size,
-            lastModified: stats.mtimeMs
-          };
-        } catch (error) {
-          this.issueManager.trackIssue({
-            file,
-            type: 'structure',
-            severity: 'error',
-            message: `Error reading file stats: ${error instanceof Error ? error.message : String(error)}`
-          });
-          return {
-            path: file,
-            size: 0,
-            lastModified: Date.now()
-          };
-        }
-      })),
-      directories: Array.from(new Set(files.map(f => join(f, '..'))))
-    };
-
-    await this.projectState.updateStructure(structure);
+  public async collectFiles(): Promise<string[]> {
+    return this.fileCollector.collectFiles();
   }
 
-  public async updateRegistry(files: string[]): Promise<void> {
-    const allFunctions: FunctionRegistry['functions'] = [];
-    for (const file of files) {
-      try {
-        const fullPath = join(this.config.rootDir, file);
-        const content = await readFile(fullPath, 'utf-8');
-        const functions = FunctionExtractor.extractFunctions(file, content);
-        allFunctions.push(...functions);
-      } catch (error) {
-        this.issueManager.trackIssue({
-          file,
-          type: 'structure',
-          severity: 'error',
-          message: `Error extracting functions: ${error instanceof Error ? error.message : String(error)}`
-        });
-      }
+  public async validateFile(filePath: string): Promise<boolean> {
+    const fullPath = join(this.config.rootDir, filePath);
+    const stats = await stat(fullPath);
+
+    if (!stats.isFile()) {
+      return false;
     }
 
-    const registry: FunctionRegistry = {
-      timestamp: Date.now(),
-      functions: allFunctions
-    };
+    return this.fileValidator.isValidFile(filePath);
+  }
 
-    await this.projectState.updateRegistry(registry);
+  public async extractFunctions(filePath: string): Promise<string[]> {
+    const fullPath = join(this.config.rootDir, filePath);
+    const content = await readFile(fullPath, 'utf-8');
+    return FunctionExtractor.extractFunctions(content);
+  }
+
+  public async updateStructure(filePath: string): Promise<void> {
+    if (!await this.validateFile(filePath)) {
+      this.issueManager.trackIssue({
+        file: filePath,
+        type: 'structure',
+        message: `Invalid test file: ${filePath}`,
+        severity: 'error'
+      });
+      return;
+    }
+
+    const functions = await this.extractFunctions(filePath);
+    this.stateManager.addGroup({
+      name: filePath,
+      pattern: filePath,
+      parallel: true,
+      setup: async () => {
+        if (await this.validateFile(filePath)) {
+          const currentFunctions = await this.extractFunctions(filePath);
+          if (JSON.stringify(currentFunctions) !== JSON.stringify(functions)) {
+            this.issueManager.trackIssue({
+              file: filePath,
+              type: 'structure',
+              message: `Test functions changed during execution`,
+              severity: 'warning'
+            });
+          }
+        }
+      }
+    });
   }
 } 

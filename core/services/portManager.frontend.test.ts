@@ -5,12 +5,14 @@ import { TestResult } from '../state';
 export async function runTest(): Promise<TestResult> {
   try {
     const config: PortConfig = {
+      port: 8080,
       basePort: 9000,
-      maxPort: 9999,
-      reservedPorts: [9001, 9002],
+      minPort: 8000,
+      maxPort: 10000,
+      reservedPorts: [8080, 8081],
       services: {
         test: {
-          port: 9003,
+          port: 9001,
           host: 'localhost',
           protocol: 'http',
           priority: 1

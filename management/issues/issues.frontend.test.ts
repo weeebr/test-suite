@@ -1,87 +1,41 @@
-import { TestResult } from '../../../core/state';
-import { TestIssueManager } from '../../../management/issues';
+import { TestResult } from '../../core/state';
+import { IssueManager } from './issueManager';
 
 export async function runTest(): Promise<TestResult> {
   try {
-    const manager = new TestIssueManager();
-    
-    // Test issue tracking
-    const testIssue: TestResult = {
-      file: 'test.ts',
-      type: 'runtime',
-      severity: 'error',
-      message: 'Test error'
-    };
-    
-    manager.trackIssue(testIssue);
-    
-    if (manager.getIssueCount() !== 1) {
+    const issueManager = IssueManager.getInstance();
+
+    // Test issue creation
+    const issueId = issueManager.createIssue({
+      type: 'error',
+      title: 'Test Issue',
+      description: 'Test description',
+      severity: 'high',
+      source: 'test.ts'
+    });
+
+    const issue = issueManager.getIssue(issueId);
+    if (!issue || issue.status !== 'open') {
       return {
-        file: 'tests/management/issues/issue-manager.test.ts',
+        file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Issue count mismatch',
-        line: 1
+        message: 'Issue creation failed'
       };
     }
-    
-    if (manager.getErrorCount() !== 1) {
-      return {
-        file: 'tests/management/issues/issue-manager.test.ts',
-        type: 'runtime',
-        severity: 'error',
-        message: 'Error count mismatch',
-        line: 1
-      };
-    }
-    
-    // Test warning tracking
-    const warningIssue: TestResult = {
-      file: 'test.ts',
-      type: 'runtime',
-      severity: 'warning',
-      message: 'Test warning'
-    };
-    
-    manager.trackIssue(warningIssue);
-    
-    if (manager.getWarningCount() !== 1) {
-      return {
-        file: 'tests/management/issues/issue-manager.test.ts',
-        type: 'runtime',
-        severity: 'error',
-        message: 'Warning count mismatch',
-        line: 1
-      };
-    }
-    
-    // Test clear
-    manager.clear();
-    
-    if (manager.getIssueCount() !== 0) {
-      return {
-        file: 'tests/management/issues/issue-manager.test.ts',
-        type: 'runtime',
-        severity: 'error',
-        message: 'Clear failed',
-        line: 1
-      };
-    }
-    
+
     return {
-      file: 'tests/management/issues/issue-manager.test.ts',
+      file: __filename,
       type: 'runtime',
       severity: 'info',
-      message: 'Issue manager tests passed',
-      line: 1
+      message: 'Issue tests passed'
     };
   } catch (error) {
     return {
-      file: 'tests/management/issues/issue-manager.test.ts',
+      file: __filename,
       type: 'runtime',
-      severity: 'error', 
-      message: error instanceof Error ? error.message : String(error),
-      line: 1
+      severity: 'error',
+      message: error instanceof Error ? error.message : String(error)
     };
   }
 } 

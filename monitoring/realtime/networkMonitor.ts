@@ -120,18 +120,6 @@ export class NetworkMonitor extends EventEmitter {
     };
   }
 
-  private setupRequestHandlers(requestId: string, req: any): void {
-    const originalEmit = req.emit.bind(req);
-    req.emit = (event: string, ...args: any[]) => {
-      if (event === 'error') {
-        this.eventTracker.trackError(requestId, args[0]);
-      } else if (event === 'timeout') {
-        this.eventTracker.trackTimeout(requestId);
-      }
-      return originalEmit(event, ...args);
-    };
-  }
-
   public getEvents(): NetworkEvent[] {
     return this.events;
   }

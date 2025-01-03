@@ -1,45 +1,32 @@
-import { TestResult } from '../../../src/core/state';
-import { WorkerPool } from '../../../src/core/workers/pool';
-import { defaultConfig } from '../../../src/core/config';
-import { join } from 'path';
+import { TestResult } from '../../core/state';
+import { WorkerPool } from '../../core/workers/pool';
+import { defaultConfig } from '../../core/config';
 
 export async function runTest(): Promise<TestResult> {
+  let pool: WorkerPool | undefined;
+  
   try {
-    const results: TestResult[] = [];
-    const pool = new WorkerPool(
+    pool = new WorkerPool(
       {
         ...defaultConfig,
-        rootDir: join(__dirname, '../../..')
+        parallelization: {
+          ...defaultConfig.parallelization,
+          maxWorkers: 2
+        }
       },
-      (result: TestResult) => {
-        results.push(result);
-      },
-      () => {
-        // Completion callback
-      }
+      (result) => console.log(result),
+      (metrics) => console.log(metrics)
     );
 
-    // Test worker pool initialization
-    if (!pool) {
+    await pool.start(['tests/fixtures/self/samples/passing.self.test.ts']);
+    const metrics = pool.getMetrics();
+
+    if (metrics.totalMemory === 0 || metrics.averageMemory === 0) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Failed to initialize worker pool',
-        line: 1
-      };
-    }
-
-    // Test file processing
-    await pool.start(['examples/test-files/calculator.test.ts']);
-
-    if (results.length === 0) {
-      return {
-        file: __filename,
-        type: 'runtime',
-        severity: 'error',
-        message: 'No test results from worker pool',
-        line: 1
+        message: 'Worker metrics not collected'
       };
     }
 
@@ -47,16 +34,16 @@ export async function runTest(): Promise<TestResult> {
       file: __filename,
       type: 'runtime',
       severity: 'info',
-      message: 'Worker pool tests passed',
-      line: 1
+      message: 'Worker pool test passed'
     };
   } catch (error) {
     return {
       file: __filename,
       type: 'runtime',
       severity: 'error',
-      message: error instanceof Error ? error.message : String(error),
-      line: 1
+      message: error instanceof Error ? error.message : String(error)
     };
+  } finally {
+    pool?.stop();
   }
 } 

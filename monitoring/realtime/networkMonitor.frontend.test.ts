@@ -1,6 +1,6 @@
 import { NetworkMonitor } from './networkMonitor';
 import { TestResult } from '../../core/state';
-import { createServer, Server, IncomingMessage } from 'http';
+import { createServer, IncomingMessage } from 'http';
 import { AddressInfo } from 'net';
 
 export async function runTest(): Promise<TestResult> {

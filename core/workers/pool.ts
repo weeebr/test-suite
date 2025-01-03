@@ -38,7 +38,14 @@ export class WorkerPool {
 
   private handleMetricsUpdate(metrics: { pid: number; memory: number; startTime: number; status: WorkerStatus }): void {
     try {
-      this.metricsManager.updateMetrics(metrics.pid, metrics);
+      const enhancedMetrics = {
+        ...metrics,
+        memoryUsage: metrics.memory || 0,
+        cpuUsage: 0,
+        lastActivity: metrics.startTime || Date.now(),
+        file: 'unknown'
+      };
+      this.metricsManager.updateMetrics(metrics.pid, enhancedMetrics);
       this.updateMetrics();
     } catch (error) {
       if (error instanceof Error && !error.message.includes('ENOENT')) {
@@ -90,6 +97,20 @@ export class WorkerPool {
       );
 
       this.workers.set(file, worker);
+
+      if (worker.pid) {
+        const metrics = {
+          pid: worker.pid,
+          memory: process.memoryUsage().heapUsed,
+          memoryUsage: process.memoryUsage().heapUsed,
+          cpuUsage: 0,
+          startTime: Date.now(),
+          lastActivity: Date.now(),
+          status: 'starting' as const,
+          file: 'unknown'
+        };
+        this.metricsManager.updateMetrics(metrics.pid, metrics);
+      }
     } catch (error) {
       if (error instanceof Error && !error.message.includes('ENOENT')) {
         this.errorInterceptor.trackError('process', error, {

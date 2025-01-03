@@ -18,6 +18,9 @@ export type ErrorCategory =
   | 'assertion'  // Test assertions
   | 'validation' // Type checks, schema validation
   | 'system'     // OS, file system
+  | 'module'     // Module loading/resolution
+  | 'express'    // Express.js errors
+  | 'webpack'    // Webpack build errors
   | 'typescript' // TypeScript compiler errors
   | 'internal'   // Error interceptor internal errors
   | 'uncaught'   // Uncaught exceptions and rejections

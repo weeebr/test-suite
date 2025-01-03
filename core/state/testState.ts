@@ -22,30 +22,37 @@ export class TestState {
   }
 
   public getSummary(): TestSummary {
-    const fileResults = new Map<string, TestResult[]>();
-    
-    // Group results by file
+    const total = this.results.length;
+    const passed = this.results.filter(r => r.severity === 'info').length;
+    const failed = this.results.filter(r => r.severity === 'error').length;
+    const skipped = this.results.filter(r => r.severity === 'warning').length;
+
+    // Group results by group
+    const groupResults = new Map<string, TestResult[]>();
     for (const result of this.results) {
-      const results = fileResults.get(result.file) || [];
+      const group = result.group || 'default';
+      const results = groupResults.get(group) || [];
       results.push(result);
-      fileResults.set(result.file, results);
+      groupResults.set(group, results);
     }
 
-    // Count files with errors
-    let failedFiles = 0;
-    for (const results of fileResults.values()) {
-      if (results.some(r => r.severity === 'error')) {
-        failedFiles++;
-      }
+    const groups: TestSummary['groups'] = {};
+    for (const [group, results] of groupResults) {
+      groups[group] = {
+        total: results.length,
+        passed: results.filter(r => r.severity === 'info').length,
+        failed: results.filter(r => r.severity === 'error').length,
+        skipped: results.filter(r => r.severity === 'warning').length
+      };
     }
-
-    const totalFiles = fileResults.size;
 
     return {
-      totalFiles,
-      passedFiles: totalFiles - failedFiles,
-      failedFiles,
-      duration: Date.now() - this.startTime
+      total,
+      passed,
+      failed,
+      skipped,
+      duration: Date.now() - this.startTime,
+      groups
     };
   }
 } 

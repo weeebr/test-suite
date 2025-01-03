@@ -10,7 +10,19 @@ export class WorkerMessageHandler {
     private metricsManager: WorkerMetricsManager,
     private onResult: (result: TestResult) => void,
     private onCleanup: () => void
-  ) {}
+  ) {
+    // Initialize metrics for this worker
+    this.metricsManager.updateMetrics(this.worker.threadId, {
+      pid: this.worker.threadId,
+      memory: 0,
+      memoryUsage: 0,
+      cpuUsage: 0,
+      startTime: Date.now(),
+      lastActivity: Date.now(),
+      status: 'starting',
+      file: 'unknown'
+    });
+  }
 
   public setupMessageHandling(timeout: number): void {
     let isResolved = false;
@@ -23,7 +35,7 @@ export class WorkerMessageHandler {
     };
 
     const timeoutId = setTimeout(() => {
-      const metrics = this.metricsManager.getMetrics(this.worker);
+      const metrics = this.metricsManager.getMetrics(this.worker.threadId);
       if (metrics) {
         this.onResult({
           file: metrics.file,
@@ -38,12 +50,13 @@ export class WorkerMessageHandler {
 
     this.worker.on('message', (message: TestResult | { type: 'metrics'; memory: number; cpu: number }) => {
       if ('type' in message && message.type === 'metrics') {
-        this.metricsManager.updateMetrics(this.worker, {
+        this.metricsManager.updateMetrics(this.worker.threadId, {
+          ...this.metricsManager.getMetrics(this.worker.threadId)!,
           memoryUsage: message.memory,
           cpuUsage: message.cpu,
           lastActivity: Date.now()
         });
-        const metrics = this.metricsManager.getMetrics(this.worker);
+        const metrics = this.metricsManager.getMetrics(this.worker.threadId);
 
         if (metrics && message.memory > MAX_MEMORY_PER_WORKER) {
           this.onResult({
@@ -63,12 +76,13 @@ export class WorkerMessageHandler {
     });
 
     this.worker.on('error', (error) => {
-      const metrics = this.metricsManager.getMetrics(this.worker);
+      const metrics = this.metricsManager.getMetrics(this.worker.threadId);
       this.onResult({
         file: metrics?.file || 'unknown',
         type: 'runtime',
         severity: 'error',
-        message: error.message
+        message: error.message,
+        stack: error.stack
       });
       this.worker.terminate();
       cleanup();

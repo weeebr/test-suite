@@ -1,68 +1,28 @@
-import { FunctionRegistry } from '../state';
+import { parse } from '@babel/parser';
+import traverse from '@babel/traverse';
+import { Node, FunctionDeclaration, ArrowFunctionExpression } from '@babel/types';
 
 export class FunctionExtractor {
-  public static extractFunctions(file: string, content: string): FunctionRegistry['functions'][0][] {
-    const functions: FunctionRegistry['functions'] = [];
-    const lines = content.split('\n');
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // Match function declarations
-      const functionMatch = line.match(/(?:export\s+)?(?:async\s+)?function\s+(\w+)/);
-      if (functionMatch) {
-        functions.push({
-          name: functionMatch[1],
-          type: 'function',
-          file,
-          exported: line.includes('export'),
-          async: line.includes('async'),
-          line: i + 1
-        });
-        continue;
-      }
+  public static extractFunctions(content: string): string[] {
+    const functions: string[] = [];
+    const ast = parse(content, {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx']
+    });
 
-      // Match interface declarations
-      const interfaceMatch = line.match(/(?:export\s+)?interface\s+(\w+)/);
-      if (interfaceMatch) {
-        functions.push({
-          name: interfaceMatch[1],
-          type: 'interface',
-          file,
-          exported: line.includes('export'),
-          async: false,
-          line: i + 1
-        });
-        continue;
+    traverse(ast, {
+      FunctionDeclaration(path: { node: FunctionDeclaration }) {
+        if (path.node.id?.name) {
+          functions.push(path.node.id.name);
+        }
+      },
+      ArrowFunctionExpression(path: { node: ArrowFunctionExpression; parent: Node }) {
+        const parent = path.parent;
+        if (parent.type === 'VariableDeclarator' && parent.id.type === 'Identifier') {
+          functions.push(parent.id.name);
+        }
       }
-
-      // Match class declarations
-      const classMatch = line.match(/(?:export\s+)?class\s+(\w+)/);
-      if (classMatch) {
-        functions.push({
-          name: classMatch[1],
-          type: 'class',
-          file,
-          exported: line.includes('export'),
-          async: false,
-          line: i + 1
-        });
-        continue;
-      }
-
-      // Match type declarations
-      const typeMatch = line.match(/(?:export\s+)?type\s+(\w+)/);
-      if (typeMatch) {
-        functions.push({
-          name: typeMatch[1],
-          type: 'type',
-          file,
-          exported: line.includes('export'),
-          async: false,
-          line: i + 1
-        });
-      }
-    }
+    });
 
     return functions;
   }

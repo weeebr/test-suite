@@ -1,5 +1,4 @@
 import { ErrorInterceptor } from './errorInterceptor';
-import { ResourceMonitor } from './resourceMonitor';
 import { TestBaseline } from './types';
 
 export class TestManager {

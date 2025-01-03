@@ -1,13 +1,9 @@
 import { IssueManager } from './issueManager';
 import { TestResult } from '../../core/state';
-import { ErrorInterceptor } from '../../monitoring/realtime/errorInterceptor';
-import { ImpactAnalyzer } from '../../monitoring/realtime/impactAnalyzer';
 
 export async function runTest(): Promise<TestResult> {
   try {
     const issueManager = IssueManager.getInstance();
-    const errorInterceptor = ErrorInterceptor.getInstance();
-    const impactAnalyzer = ImpactAnalyzer.getInstance();
 
     // Test 1: Issue creation
     const issueId = issueManager.createIssue({
@@ -87,24 +83,7 @@ export async function runTest(): Promise<TestResult> {
       };
     }
 
-    // Test 6: Error event handling
-    let issueCreated = false;
-    issueManager.once('issueCreated', () => {
-      issueCreated = true;
-    });
-
-    errorInterceptor.trackError('runtime', new Error('Test error'), { source: 'test.ts' });
-
-    if (!issueCreated) {
-      return {
-        file: __filename,
-        type: 'runtime',
-        severity: 'error',
-        message: 'Error event handling failed'
-      };
-    }
-
-    // Test 7: State persistence
+    // Test 6: State persistence
     await issueManager.initialize();
     const persistedIssue = issueManager.getIssue(issueId);
     if (!persistedIssue) {

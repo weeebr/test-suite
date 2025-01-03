@@ -8,8 +8,8 @@ export async function runMemoryTests(): Promise<TestResult> {
   const testId = 'memory-test';
   performanceMonitor.startTest(testId);
 
-  // Allocate some memory
-  const array = new Array(1000000).fill(0);
+  // Force memory allocation
+  new Array(1000000).fill(0);
 
   performanceMonitor.endTest(testId);
 
@@ -30,7 +30,7 @@ export async function runMemoryTests(): Promise<TestResult> {
 
   // Try to allocate more memory than the limit
   try {
-    const largeArray = new Array(1000000).fill(0);
+    new Array(1000000).fill(0);
     await new Promise(resolve => setTimeout(resolve, 200)); // Wait for limit check
   } catch {}
 

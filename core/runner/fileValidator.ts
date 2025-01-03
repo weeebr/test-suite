@@ -1,7 +1,7 @@
-import { Config, TestPatterns } from '../config';
+import { TestSuiteConfig, TestPatterns } from '../config';
 
 export class FileValidator {
-  constructor(private config: Config) {}
+  constructor(private config: TestSuiteConfig) {}
 
   private isValidExtension(filePath: string): boolean {
     return this.config.testFileExtensions.some(ext => filePath.endsWith(ext));
@@ -48,26 +48,10 @@ export class FileValidator {
       return false;
     }
 
-    // Check if file is in target directories
-    if (!this.config.targetDirs.some(dir => {
-      // Handle glob patterns in targetDirs
-      const globToRegex = (glob: string) => new RegExp(
-        '^' + glob.replace(/\*/g, '.*').replace(/\?/g, '.') + '$'
-      );
-      return globToRegex(dir).test(filePath);
-    })) {
-      return false;
-    }
-
-    // Check file extension
-    if (!this.isValidExtension(filePath)) {
-      return false;
-    }
-
-    return this.matchesPattern(filePath, this.config.testPattern);
+    return this.isValidExtension(filePath) && this.matchesPattern(filePath, this.config.testPattern);
   }
 
   public isMatchingTestType(filePath: string): boolean {
-    return this.isValidFile(filePath);
+    return this.matchesPattern(filePath, this.config.testPattern);
   }
 } 
