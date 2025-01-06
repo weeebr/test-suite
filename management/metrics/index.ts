@@ -15,7 +15,7 @@ export class TestMetricsManager {
   private metrics: TestMetrics[] = [];
 
   public trackMetrics(results: TestResult[], state: TestState): void {
-    const duration = state.endTime ? state.endTime - state.startTime : 0;
+    const duration = state.endTime && state.startTime ? state.endTime - state.startTime : 0;
     const metrics: TestMetrics = {
       totalTests: results.length,
       passedTests: results.filter(r => r.severity === 'info').length,

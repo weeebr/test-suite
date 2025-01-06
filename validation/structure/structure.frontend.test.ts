@@ -9,6 +9,13 @@ interface ValidationStats {
 
 export async function runTest(): Promise<TestResult> {
   try {
+    console.log('Starting structure validation test');
+    console.log('Current working directory:', process.cwd());
+    console.log('__dirname:', __dirname);
+    console.log('__filename:', __filename);
+    console.log('TEST_ROOT_DIR:', process.env.TEST_ROOT_DIR);
+    console.log('Environment variables:', process.env);
+
     const structureValidator = StructureValidator.getInstance();
     const fileSizeValidator = FileSizeValidator.getInstance();
     const codeQualityValidator = CodeQualityValidator.getInstance();
@@ -42,14 +49,18 @@ export async function runTest(): Promise<TestResult> {
     }
 
     // Validate file sizes
-    const sizeResults = await fileSizeValidator.validateDirectory('.');
+    const rootDir = process.env.TEST_ROOT_DIR || process.cwd();
+    console.log('Root directory:', rootDir);
+    const sizeResults = await fileSizeValidator.validateDirectory(rootDir);
+    console.log('Size validation results:', JSON.stringify(sizeResults, null, 2));
+    const sizeErrors = sizeResults.filter(r => !r.isValid);
+    console.log('Size errors:', JSON.stringify(sizeErrors, null, 2));
+    
     stats.push({
       group: 'File Size',
-      errors: sizeResults.filter(r => !r.isValid).length,
+      errors: sizeErrors.length,
       warnings: 0
     });
-
-    const sizeErrors = sizeResults.filter(r => !r.isValid);
 
     if (sizeErrors.length > 0) {
       return {
@@ -58,7 +69,9 @@ export async function runTest(): Promise<TestResult> {
         severity: 'error',
         message: `File size validation failed:\n${sizeErrors
           .map(e => e.message)
-          .join('\n')}`,
+          .join('\n')}\n\nFiles exceeding limit:\n${sizeErrors
+          .map(e => `${e.file}: ${e.lineCount} lines`)
+          .join('\n')}\n\nValidation results:\n${JSON.stringify(sizeResults, null, 2)}`,
         line: 1,
         column: 1
       };

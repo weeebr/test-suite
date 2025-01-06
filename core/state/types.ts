@@ -1,5 +1,5 @@
+export type TestType = 'runtime' | 'structure' | 'validation';
 export type TestSeverity = 'info' | 'warning' | 'error';
-export type TestType = 'runtime' | 'module' | 'syntax' | 'structure';
 
 export interface TestResult {
   file: string;
@@ -11,26 +11,21 @@ export interface TestResult {
   line?: number;
   column?: number;
   duration?: number;
+  consoleOutput?: string[];
   group?: string;
 }
 
 export interface TestGroup {
   name: string;
-  pattern: string;
-  setup?: () => Promise<void>;
-  teardown?: () => Promise<void>;
-  parallel?: boolean;
-  timeout?: number;
-  maxParallel?: number;
-  files?: string[];
+  files: string[];
+  results: TestResult[];
 }
 
 export interface TestState {
-  groups: Map<string, TestGroup>;
-  results: Map<string, TestResult[]>;
-  running: Set<string>;
-  completed: Set<string>;
-  startTime: number;
+  groups: Record<string, TestGroup>;
+  completedTests: number;
+  totalTests: number;
+  startTime?: number;
   endTime?: number;
 }
 

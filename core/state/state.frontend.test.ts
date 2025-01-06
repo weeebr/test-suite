@@ -3,55 +3,54 @@ import { TestResult, TestState } from './types';
 export async function runTest(): Promise<TestResult> {
   try {
     const state: TestState = {
-      groups: new Map(),
-      results: new Map(),
-      running: new Set(),
-      completed: new Set(),
+      groups: {},
+      completedTests: 0,
+      totalTests: 0,
       startTime: Date.now()
     };
 
-    // Test 1: Initial state
-    if (state.groups.size > 0) {
+    // Test initial state
+    if (Object.keys(state.groups).length > 0) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Initial state not empty'
+        message: 'Initial state should be empty'
       };
     }
 
-    // Test 2: Add test group
-    state.groups.set('test-group', {
+    // Test group management
+    state.groups['test-group'] = {
       name: 'test-group',
-      pattern: '*.test.ts',
-      parallel: true
-    });
+      files: ['test.ts'],
+      results: []
+    };
 
-    if (state.groups.size !== 1) {
+    if (Object.keys(state.groups).length !== 1) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Group not added correctly'
+        message: 'Failed to add group'
       };
     }
 
-    // Test 3: Add test result
-    const results = state.results.get('test-group') || [];
-    results.push({
+    // Test result management
+    const testResult: TestResult = {
       file: 'test.ts',
       type: 'runtime',
       severity: 'info',
       message: 'Test passed'
-    });
-    state.results.set('test-group', results);
+    };
 
-    if (!state.results.has('test-group')) {
+    state.groups['test-group'].results.push(testResult);
+
+    if (!state.groups['test-group']) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Results not added correctly'
+        message: 'Failed to store test result'
       };
     }
 
@@ -59,14 +58,15 @@ export async function runTest(): Promise<TestResult> {
       file: __filename,
       type: 'runtime',
       severity: 'info',
-      message: 'State management tests passed'
+      message: 'State management test passed'
     };
   } catch (error) {
     return {
       file: __filename,
       type: 'runtime',
       severity: 'error',
-      message: error instanceof Error ? error.message : String(error)
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
     };
   }
 } 

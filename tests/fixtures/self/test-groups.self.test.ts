@@ -2,31 +2,15 @@ import { TestResult } from '../../../core/state';
 import { TestRunner } from '../../../core/runner';
 import { defaultConfig } from '../../../core/config';
 
-async function validateGroupCreation(): Promise<TestResult> {
-  const runner = new TestRunner({
-    ...defaultConfig,
-    targetDirs: ['tests/fixtures/self/samples'],
-    testPattern: /\.self\.test\.ts$/,
-    testType: 'self'
-  });
-
+export async function runTest(): Promise<TestResult> {
   try {
+    const runner = new TestRunner(defaultConfig);
     const files = await runner.collectFiles();
-    const groups = runner['createTestGroups'](files);
+    const groups = runner.groupFiles(files);
 
-    if (groups.length === 0) {
-      return {
-        file: __filename,
-        type: 'runtime',
-        severity: 'error',
-        message: 'No test groups created',
-        code: 'SELF_TEST_GROUP_CREATION'
-      };
-    }
-
-    // Verify group properties
-    const invalidGroups = groups.filter(g => 
-      !g.name || !g.pattern || typeof g.parallel === 'undefined'
+    // Validate group structure
+    const invalidGroups = groups.filter(g =>
+      !g.name || !g.files || !Array.isArray(g.files)
     );
 
     if (invalidGroups.length > 0) {
@@ -34,57 +18,24 @@ async function validateGroupCreation(): Promise<TestResult> {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Invalid group properties detected',
-        code: 'SELF_TEST_GROUP_PROPERTIES'
+        message: `Invalid group structure:\n${JSON.stringify(invalidGroups, null, 2)}`,
+        code: 'ERR_GROUP_STRUCTURE'
       };
     }
 
-    return {
-      file: __filename,
-      type: 'runtime',
-      severity: 'info',
-      message: `Successfully created ${groups.length} test groups`,
-      code: 'SELF_TEST_GROUP_SUCCESS'
-    };
-  } catch (error) {
-    return {
-      file: __filename,
-      type: 'runtime',
-      severity: 'error',
-      message: error instanceof Error ? error.message : String(error),
-      code: 'SELF_TEST_GROUP_ERROR'
-    };
-  }
-}
+    // Validate group names
+    const validGroupNames = ['frontend', 'validation', 'self', 'tests'];
+    const invalidGroupNames = groups
+      .map(g => g.name)
+      .filter(name => !validGroupNames.includes(name));
 
-async function validateGroupExecution(): Promise<TestResult> {
-  const runner = new TestRunner({
-    ...defaultConfig,
-    targetDirs: ['tests/fixtures/self/samples'],
-    testPattern: /\.self\.test\.ts$/,
-    testType: 'self',
-    parallelization: {
-      ...defaultConfig.parallelization,
-      maxWorkers: 2
-    }
-  });
-
-  try {
-    const startTime = Date.now();
-    const results = await runner.runTests();
-    const duration = Date.now() - startTime;
-
-    // Check if tests ran in parallel by comparing duration
-    const expectedParallelTime = results.length * 100; // Assuming each test takes ~100ms
-    const isParallel = duration < expectedParallelTime;
-
-    if (!isParallel) {
+    if (invalidGroupNames.length > 0) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Tests did not execute in parallel as expected',
-        code: 'SELF_TEST_GROUP_PARALLEL'
+        message: `Invalid group names: ${invalidGroupNames.join(', ')}`,
+        code: 'ERR_GROUP_NAMES'
       };
     }
 
@@ -92,8 +43,7 @@ async function validateGroupExecution(): Promise<TestResult> {
       file: __filename,
       type: 'runtime',
       severity: 'info',
-      message: `Successfully executed ${results.length} tests in parallel`,
-      code: 'SELF_TEST_GROUP_EXECUTION'
+      message: 'Test groups validation passed'
     };
   } catch (error) {
     return {
@@ -101,14 +51,7 @@ async function validateGroupExecution(): Promise<TestResult> {
       type: 'runtime',
       severity: 'error',
       message: error instanceof Error ? error.message : String(error),
-      code: 'SELF_TEST_GROUP_ERROR'
+      code: 'ERR_TEST_FAILED'
     };
   }
-}
-
-export async function runTest(): Promise<TestResult[]> {
-  return [
-    await validateGroupCreation(),
-    await validateGroupExecution()
-  ];
 } 

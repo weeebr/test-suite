@@ -57,24 +57,12 @@ async function main() {
   }
 
   const startTime = Date.now();
-  const progressInterval = setInterval(() => {}, 500);
-  process.stdout.write(`\n\n`);
-
-  let cleanupDone = false;
-  const cleanup = () => {
-    if (!cleanupDone) {
-      cleanupDone = true;
-      clearInterval(progressInterval);
-    }
-  };
 
   // Ensure cleanup on process signals
   process.on('SIGINT', () => {
-    cleanup();
     process.exit(130);
   });
   process.on('SIGTERM', () => {
-    cleanup();
     process.exit(143);
   });
 
@@ -93,7 +81,6 @@ async function main() {
     });
 
     const results = await runner.runTests();
-    cleanup();
 
     process.stdout.write(`\n\n`);
 
@@ -129,7 +116,6 @@ async function main() {
     // Exit with appropriate code
     process.exit(errors > 0 ? 1 : 0);
   } catch (error) {
-    cleanup();
     console.error('\n❌ Test runner error:');
     console.error(error);
     process.exit(1);

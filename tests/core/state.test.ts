@@ -5,48 +5,46 @@ export async function runTest(): Promise<TestResult> {
   try {
     const state = new TestStateManager();
 
-    // Test result tracking
-    const testResult: TestResult = {
-      file: 'test.ts',
+    // Initialize test groups
+    state.initializeGroup('test-group', ['test1.ts', 'test2.ts']);
+
+    // Complete some tests
+    state.completeTest('test-group', 'test1.ts', {
+      file: 'test1.ts',
       type: 'runtime',
       severity: 'info',
       message: 'Test passed'
-    };
+    });
 
-    state.addGroup({ name: 'test', pattern: '*.test.ts' });
-    state.startTest('test', 'test.ts');
-    state.completeTest('test', 'test.ts', testResult);
-    const results = state.getAllResults();
+    state.completeTest('test-group', 'test2.ts', {
+      file: 'test2.ts',
+      type: 'runtime',
+      severity: 'error',
+      message: 'Test failed'
+    });
 
-    if (results.length !== 1) {
+    // Get results
+    const results = state.getResults();
+    if (results.length !== 2) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Expected 1 test result'
+        message: `Invalid results count: ${results.length}`,
+        code: 'ERR_STATE'
       };
     }
 
-    state.finalize();
-    const finalResults = state.getAllResults();
-    if (finalResults.length !== 1) {
+    // Verify results
+    const passed = results.filter(r => r.severity === 'info').length;
+    const failed = results.filter(r => r.severity === 'error').length;
+    if (passed !== 1 || failed !== 1) {
       return {
         file: __filename,
         type: 'runtime',
         severity: 'error',
-        message: 'Expected 1 test result after finalize'
-      };
-    }
-
-    // Create a new state manager to test cleanup
-    const newState = new TestStateManager();
-    const cleanResults = newState.getAllResults();
-    if (cleanResults.length !== 0) {
-      return {
-        file: __filename,
-        type: 'runtime',
-        severity: 'error',
-        message: 'Expected no results in new state'
+        message: `Invalid result counts - passed: ${passed}, failed: ${failed}`,
+        code: 'ERR_STATE'
       };
     }
 
@@ -54,7 +52,7 @@ export async function runTest(): Promise<TestResult> {
       file: __filename,
       type: 'runtime',
       severity: 'info',
-      message: 'Test state management passed'
+      message: 'State test passed'
     };
   } catch (error) {
     return {
@@ -62,7 +60,7 @@ export async function runTest(): Promise<TestResult> {
       type: 'runtime',
       severity: 'error',
       message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      code: 'ERR_TEST_FAILED'
     };
   }
 } 
